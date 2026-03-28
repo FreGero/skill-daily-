@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill 日报 #001 — Humanizer 去AI味编辑器</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card: #1a1a2e;
+    --card2: #16213e;
+    --accent: #e94560;
+    --accent2: #0f3460;
+    --text: #e0e0e0;
+    --text2: #a0a0a0;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 60px 24px 40px;
+    text-align: center;
+    border-bottom: 3px solid var(--accent);
+  }
+  .hero .issue { color: var(--accent); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+  .hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  .hero .subtitle { color: var(--text2); font-size: 18px; margin-bottom: 20px; }
+  .hero .tags { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .hero .tag { background: rgba(233,69,96,0.2); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+  .meta-bar {
+    display: flex; justify-content: center; gap: 32px; padding: 16px; background: var(--card);
+    font-size: 14px; color: var(--text2); border-bottom: 1px solid #333;
+  }
+  .meta-bar span { display: flex; align-items: center; gap: 6px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 16px;
+    padding-left: 16px; border-left: 4px solid var(--accent);
+  }
+
+  .card {
+    background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    border: 1px solid #2a2a4a;
+  }
+  .card h3 { color: var(--accent); font-size: 18px; margin-bottom: 12px; }
+  .card p, .card li { color: var(--text2); font-size: 15px; line-height: 1.8; }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(233,69,96,0.1), rgba(15,52,96,0.2));
+    border: 1px solid var(--accent);
+    border-radius: 12px; padding: 24px; margin-bottom: 16px;
+  }
+  .highlight-box h3 { color: #fff; }
+
+  .comparison {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+  .comp-before, .comp-after {
+    padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.7;
+  }
+  .comp-before { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+  .comp-after { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); }
+  .comp-label { font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+  .comp-before .comp-label { color: #ef4444; }
+  .comp-after .comp-label { color: var(--green); }
+
+  .pattern-list { counter-reset: pattern; }
+  .pattern-item {
+    background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 12px;
+    border: 1px solid #2a2a4a; cursor: pointer; transition: all 0.2s;
+  }
+  .pattern-item:hover { border-color: var(--accent); }
+  .pattern-header { display: flex; align-items: center; gap: 12px; }
+  .pattern-num {
+    background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pattern-name { font-size: 16px; font-weight: 600; flex: 1; }
+  .pattern-toggle { color: var(--text2); font-size: 20px; transition: transform 0.2s; }
+  .pattern-body { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #333; }
+  .pattern-item.open .pattern-body { display: block; }
+  .pattern-item.open .pattern-toggle { transform: rotate(180deg); }
+  .watch-words { color: var(--yellow); font-size: 13px; margin-bottom: 12px; }
+
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step {
+    display: flex; gap: 16px; padding: 16px 0;
+  }
+  .flow-dot {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+    background: var(--accent2); color: var(--blue); border: 2px solid var(--blue);
+  }
+  .flow-content h4 { font-size: 16px; margin-bottom: 4px; }
+  .flow-content p { font-size: 14px; color: var(--text2); }
+  .flow-arrow { text-align: center; color: var(--text2); font-size: 20px; margin: -8px 0; padding-left: 10px; }
+
+  .ref-link {
+    display: block; background: var(--card2); border-radius: 8px; padding: 14px 18px;
+    margin-bottom: 8px; text-decoration: none; color: var(--text);
+    border: 1px solid #2a2a4a; transition: all 0.2s;
+  }
+  .ref-link:hover { border-color: var(--blue); }
+  .ref-link .ref-title { font-weight: 600; }
+  .ref-link .ref-desc { font-size: 13px; color: var(--text2); }
+
+  .verdict-box {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    border: 2px solid var(--green); border-radius: 16px; padding: 32px; text-align: center;
+  }
+  .verdict-box h3 { color: var(--green); font-size: 24px; margin-bottom: 16px; }
+  .stars { font-size: 28px; margin-bottom: 12px; }
+
+  .interact-section { margin-top: 40px; padding: 32px; background: var(--card); border-radius: 16px; border: 1px solid #2a2a4a; }
+  .interact-section h3 { color: var(--accent); margin-bottom: 16px; }
+  .interact-section textarea {
+    width: 100%; height: 100px; background: #0f0f0f; color: var(--text);
+    border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 14px;
+    resize: vertical; font-family: inherit;
+  }
+  .interact-section textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px; border-radius: 8px; border: none; font-size: 14px;
+    cursor: pointer; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #d63851; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid #555; }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .footer { text-align: center; padding: 40px 16px; color: var(--text2); font-size: 13px; border-top: 1px solid #222; margin-top: 40px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .badge-easy { background: rgba(74,222,128,0.2); color: var(--green); }
+  .badge-content { background: rgba(251,191,36,0.2); color: var(--yellow); }
+  .badge-must { background: rgba(233,69,96,0.2); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="issue">SKILL 日报 · 第 001 期 · 2026.03.28</div>
+  <h1>🔍 Humanizer</h1>
+  <div class="subtitle">去AI味编辑器 — 让AI写的东西不像AI写的</div>
+  <div class="tags">
+    <span class="tag">内容创作</span>
+    <span class="tag">写作编辑</span>
+    <span class="tag">去AI痕迹</span>
+    <span class="tag">v2.1.1</span>
+  </div>
+</div>
+
+<div class="meta-bar">
+  <span>📦 SKILL.md 17.4 KB</span>
+  <span>📄 含 README.md</span>
+  <span>⚡ 即装即用，无需配置</span>
+  <span>🏷️ MIT 许可</span>
+</div>
+
+<div class="container">
+
+  <!-- 一句话概述 -->
+  <div class="section">
+    <div class="section-title">这个 Skill 是什么？</div>
+    <div class="highlight-box">
+      <h3>一句话：识别并去除 AI 生成文本的痕迹，让文字重新有"人味"。</h3>
+      <p style="margin-top:12px; color:var(--text2)">
+        基于维基百科 <strong>WikiProject AI Cleanup</strong> 项目总结的 24 种 AI 写作特征，系统性检测并修复 AI 文本。不只是"去掉坏的"，还教你"加入灵魂"——有观点、有节奏、敢不完美。
+      </p>
+    </div>
+  </div>
+
+  <!-- 为什么值得学 -->
+  <div class="section">
+    <div class="section-title">为什么值得学？</div>
+    <div class="card">
+      <p>在 AI 内容泛滥的时代，<strong>能分辨和修复 AI 痕迹是内容从业者的核心竞争力</strong>。这个 Skill 提供的不是简单的"换词"，而是一套完整的"什么让文字听起来像AI写的"分类学。</p>
+      <ul style="margin-top:12px">
+        <li><span class="badge badge-must">必学</span> 用 AI 辅助写作的人——学完能让产出质量飞升</li>
+        <li><span class="badge badge-content">适用</span> 编辑、审稿、内容运营——掌握一套检测 AI 文本的系统方法</li>
+        <li><span class="badge badge-easy">好学</span> 不需要任何技术基础，纯写作/编辑层面的知识</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 核心理念 -->
+  <div class="section">
+    <div class="section-title">核心理念：光"去掉坏的"不够，还要"加入灵魂"</div>
+    <div class="card">
+      <h3>无灵魂写作的六个信号</h3>
+      <ul>
+        <li>每句话长度和结构都一样</li>
+        <li>只有中立陈述，没有观点</li>
+        <li>不承认不确定性和矛盾感受</li>
+        <li>该用第一人称的时候不用</li>
+        <li>没有幽默、没有锋芒、没有个性</li>
+        <li>读起来像维基百科或新闻通稿</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>六个"加灵魂"方法</h3>
+      <ul>
+        <li><strong>敢有观点</strong> — "说实话我不知道该怎么看待这个" 比客观罗列利弊更人性</li>
+        <li><strong>变换节奏</strong> — 短句有力。长句慢慢展开。混着来。</li>
+        <li><strong>承认复杂</strong> — "这很厉害但也有点让人不安" 比 "这很厉害" 真实</li>
+        <li><strong>用"我"</strong> — 第一人称不是不专业，是诚实</li>
+        <li><strong>允许不完美</strong> — 完美的结构感觉像算法。跑题、插嘴、半成型的想法才是人</li>
+        <li><strong>具体描述感受</strong> — 不要"这令人担忧"，要"想到AI代理在凌晨3点没人看着的时候不停运转，有种说不出的不安"</li>
+      </ul>
+    </div>
+    <div class="comparison">
+      <div class="comp-before">
+        <div class="comp-label">❌ 干净但没灵魂</div>
+        The experiment produced interesting results. The agents generated 3 million lines of code. Some developers were impressed while others were skeptical. The implications remain unclear.
+      </div>
+      <div class="comp-after">
+        <div class="comp-label">✅ 有脉搏</div>
+        I genuinely don't know how to feel about this one. 3 million lines of code, generated while the humans presumably slept. Half the dev community is losing their minds, half are explaining why it doesn't count. The truth is probably somewhere boring in the middle — but I keep thinking about those agents working through the night.
+      </div>
+    </div>
+  </div>
+
+  <!-- 24 种模式 -->
+  <div class="section">
+    <div class="section-title">AI 写作的 24 种特征模式（可折叠）</div>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">点击展开每个模式的详细说明和修改示例 👇</p>
+
+    <div class="pattern-list">
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">1</div>
+          <div class="pattern-name">夸大意义和象征性</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 关键词：stands as, testament, pivotal, evolving landscape, indelible mark, deeply rooted</div>
+          <p>AI 喜欢给任何东西加上"标志性"、"具有里程碑意义"等帽子。</p>
+          <div class="comparison">
+            <div class="comp-before"><div class="comp-label">❌ AI味</div>加泰罗尼亚统计局于1989年正式成立，<em>标志着西班牙地区统计发展的关键时刻</em>。</div>
+            <div class="comp-after"><div class="comp-label">✅ 修复</div>加泰罗尼亚统计局成立于1989年，负责独立于西班牙国家统计局收集和发布地区统计数据。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">2</div>
+          <div class="pattern-name">过度强调知名度</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 关键词：independent coverage, leading expert, active social media presence</div>
+          <p>AI 用一堆媒体名称来"证明"某人重要，却不说实质内容。</p>
+          <div class="comparison">
+            <div class="comp-before"><div class="comp-label">❌ AI味</div>她的观点被纽约时报、BBC、金融时报和印度报引用。她拥有超过50万粉丝的活跃社交媒体。</div>
+            <div class="comp-after"><div class="comp-label">✅ 修复</div>在2024年纽约时报的采访中，她认为AI监管应关注结果而非方法。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">3</div>
+          <div class="pattern-name">-ing 结尾的假深度</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 关键词：highlighting, ensuring, reflecting, symbolizing, fostering, showcasing</div>
+          <p>AI 在句子后面加现在分词短语假装有深度分析。</p>
+          <div class="comparison">
+            <div class="comp-before"><div class="comp-label">❌ AI味</div>寺庙的蓝、绿、金配色与当地自然美景呼应，<em>symbolizing 得克萨斯蓝帽花和墨西哥湾，reflecting 社区与土地的深层联系</em>。</div>
+            <div class="comp-after"><div class="comp-label">✅ 修复</div>寺庙使用蓝、绿、金配色。建筑师表示颜色参考了当地的蓝帽花和海湾海岸。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">4</div>
+          <div class="pattern-name">推销式语言</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 关键词：vibrant, profound, nestled, breathtaking, must-visit, stunning, renowned, groundbreaking</div>
+          <p>AI 写"文化遗产"类主题时特别容易变成旅游宣传册。</p>
+          <div class="comparison">
+            <div class="comp-before"><div class="comp-label">❌ AI味</div><em>坐落在</em>埃塞俄比亚贡德尔<em>令人叹为观止</em>的地区，阿拉马塔是一个<em>充满活力</em>、拥有<em>丰富文化遗产</em>和<em>迷人自然美景</em>的城镇。</div>
+            <div class="comp-after"><div class="comp-label">✅ 修复</div>阿拉马塔是埃塞俄比亚贡德尔地区的城镇，以周集市和18世纪教堂闻名。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">5</div>
+          <div class="pattern-name">模糊出处</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 关键词：Industry reports, Experts argue, Some critics argue, Observers have cited</div>
+          <p>AI 把观点归给模糊的"专家"而不给具体来源。</p>
+          <div class="comparison">
+            <div class="comp-before"><div class="comp-label">❌ AI味</div><em>专家认为</em>该河流在区域生态系统中<em>发挥着至关重要的作用</em>。</div>
+            <div class="comp-after"><div class="comp-label">✅ 修复</div>根据中国科学院2019年的调查，该河流是几种特有鱼类的栖息地。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">6</div>
+          <div class="pattern-name">"挑战与展望"套路</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 关键词：Despite its..., faces several challenges, Despite these challenges, Future Outlook</div>
+          <p>AI 生成的文章几乎都有"尽管面临挑战…但前景光明"的公式化段落。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">7</div>
+          <div class="pattern-name">AI 高频词汇</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <div class="watch-words">⚠️ 高频词：Additionally, align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, highlight, interplay, intricate, landscape, pivotal, showcase, tapestry, testament, underscore, vibrant</div>
+          <p>这些词在2023年后的文本中出现频率远超正常。它们经常同时出现。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">8</div>
+          <div class="pattern-name">回避"是"（serves as 代替 is）</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>AI 用 "serves as"、"stands as"、"represents" 替代简单的 "is"。Gallery 825 <em>serves as</em> LAAA's exhibition space → Gallery 825 <em>is</em> LAAA's exhibition space。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">9</div>
+          <div class="pattern-name">否定平行句式</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>"Not only...but..."、"It's not just...it's..." 这类句式被严重滥用。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">10</div>
+          <div class="pattern-name">三段式套路</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>AI 强迫把所有东西凑成三个一组。"创新、灵感和行业洞察" — 其实说"包括演讲和圆桌讨论"就够了。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">11-14</div>
+          <div class="pattern-name">同义词循环 · 假范围 · 破折号滥用 · 粗体滥用</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <ul>
+            <li><strong>同义词循环</strong>：protagonist → main character → central figure → hero，其实一个词够了</li>
+            <li><strong>假范围</strong>："from X to Y" 但 X 和 Y 不在有意义的标尺上</li>
+            <li><strong>破折号滥用</strong>：AI 的破折号（—）使用频率远超人类</li>
+            <li><strong>粗体滥用</strong>：机械性地加粗关键词，实际上削弱了强调效果</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">15-18</div>
+          <div class="pattern-name">列表+粗体标题 · 标题大写 · Emoji装饰 · 弯引号</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <ul>
+            <li><strong>列表标题</strong>："- <strong>用户体验：</strong>..." 这种格式是 AI 的签名</li>
+            <li><strong>标题大写</strong>：AI 爱把标题里每个词首字母大写</li>
+            <li><strong>Emoji</strong>：🚀💡✅ 出现在标题和列表前 = AI味十足</li>
+            <li><strong>弯引号</strong>：ChatGPT 用弯引号 "..." 而非直引号 "..."</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">19-24</div>
+          <div class="pattern-name">客服腔 · 知识截止声明 · 讨好语气 · 废话 · 过度对冲 · 鸡汤结尾</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <ul>
+            <li>"I hope this helps!"、"Let me know if..." — 聊天痕迹被复制进正文</li>
+            <li>"As of my last training update..." — AI 的知识截止声明</li>
+            <li>"Great question!" — 过度讨好</li>
+            <li>"In order to achieve this goal" → "To achieve this" — 废话太多</li>
+            <li>"It could potentially possibly be argued that..." — 过度对冲</li>
+            <li>"The future looks bright" — 鸡汤结尾</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 工作流程 -->
+  <div class="section">
+    <div class="section-title">使用流程</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <h4>输入文本</h4>
+          <p>把需要"去AI味"的文本交给 Humanizer</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <h4>扫描24种模式</h4>
+          <p>系统性检测所有 AI 写作特征</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <h4>重写问题段落</h4>
+          <p>用自然表达替换 AI 套路，保留核心意思</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <h4>注入人格</h4>
+          <p>加入观点、节奏变化、第一人称、具体感受</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-content">
+          <h4>输出结果 + 修改说明</h4>
+          <p>给出重写后的文本，以及改了什么、为什么改</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 参考资料 -->
+  <div class="section">
+    <div class="section-title">参考资料与背景</div>
+    <a href="https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing" target="_blank" class="ref-link">
+      <div class="ref-title">📖 Wikipedia: Signs of AI writing</div>
+      <div class="ref-desc">本 Skill 的核心知识来源，由 WikiProject AI Cleanup 维护，基于数千个 AI 生成文本的实际观察</div>
+    </a>
+    <a href="https://github.com" target="_blank" class="ref-link">
+      <div class="ref-title">📦 SKILL.md 原文（17.4 KB）</div>
+      <div class="ref-desc">完整的 Skill 定义文件，包含所有 24 种模式的英文原版、Before/After 示例</div>
+    </a>
+    <a href="#" class="ref-link" onclick="event.preventDefault()">
+      <div class="ref-title">📘 README.md（2.8 KB）</div>
+      <div class="ref-desc">附带的说明文档，介绍 Skill 的用途和使用方式</div>
+    </a>
+  </div>
+
+  <!-- 综合评价 -->
+  <div class="section">
+    <div class="verdict-box">
+      <div class="stars">⭐⭐⭐⭐⭐</div>
+      <h3>强烈推荐安装</h3>
+      <p style="color:var(--text2); max-width:500px; margin:0 auto;">
+        零配置、即装即用、不需要技术背景。<br>
+        对所有用 AI 辅助写作的人来说，这是<strong>必备工具</strong>。<br>
+        学习价值极高——即使不安装，24 种模式本身就是一份绝佳的编辑检查表。
+      </p>
+    </div>
+  </div>
+
+  <!-- 互动区 -->
+  <div class="interact-section">
+    <h3>📝 学习心得 & 互动</h3>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">看完这个 Skill，有什么想法？可以记录在这里（保存在本地）</p>
+    <textarea id="notes" placeholder="写点学习心得...&#10;&#10;比如：哪些模式我在工作中经常踩？哪些方法可以马上用起来？"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveNotes()">💾 保存心得</button>
+      <button class="btn btn-outline" onclick="clearNotes()">清空</button>
+    </div>
+    <div id="save-status" style="margin-top:8px; font-size:13px; color:var(--green); display:none;">✅ 已保存到本地</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Skill 日报 — 每天拆解一个 AI 技能 | Powered by Buddy ⚡</p>
+  <p style="margin-top:4px;">下一期预告：Content Factory — 多智能体内容生产系统</p>
+</div>
+
+<script>
+function saveNotes() {
+  const notes = document.getElementById('notes').value;
+  localStorage.setItem('skill-daily-001-notes', notes);
+  const status = document.getElementById('save-status');
+  status.style.display = 'block';
+  setTimeout(() => status.style.display = 'none', 2000);
+}
+function clearNotes() {
+  document.getElementById('notes').value = '';
+  localStorage.removeItem('skill-daily-001-notes');
+}
+// Load saved notes
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('skill-daily-001-notes');
+  if (saved) document.getElementById('notes').value = saved;
+});
+</script>
+
+</body>
+</html>
