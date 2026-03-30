@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill 日报 #002 — Content Factory 多智能体内容工厂</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface-2: #1a1a25;
+            --border: #2a2a3a;
+            --text: #e0e0e8;
+            --text-dim: #8888a0;
+            --accent: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.15);
+            --green: #22c55e;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --purple: #a855f7;
+            --pink: #ec4899;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 3rem 2rem;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(245,158,11,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(168,85,247,0.06) 0%, transparent 40%);
+            animation: drift 20s ease-in-out infinite;
+        }
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-2%, 1%); }
+        }
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        .series-tag {
+            display: inline-block;
+            background: rgba(245,158,11,0.15);
+            color: var(--accent);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(135deg, #fff 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header .subtitle {
+            font-size: 1.15rem;
+            color: var(--text-dim);
+            max-width: 600px;
+        }
+        .meta-bar {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        .meta-item .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Main */
+        .main { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+        /* Section */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .section-title .icon {
+            font-size: 1.4rem;
+        }
+
+        /* Overview card */
+        .overview-card {
+            background: linear-gradient(135deg, var(--surface-2), var(--surface));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .overview-card .one-liner {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.8rem;
+        }
+        .overview-card p {
+            color: var(--text-dim);
+            line-height: 1.8;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .stat-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+        .stat-card .num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 0.3rem;
+        }
+
+        /* Pipeline */
+        .pipeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .pipeline-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            transition: all 0.2s;
+        }
+        .pipeline-step:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+        .pipeline-step .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .pipeline-step .step-info h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .pipeline-step .step-info p {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        .pipeline-arrow {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 1.2rem;
+        }
+
+        /* Collapsible */
+        details {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 0.8rem;
+            overflow: hidden;
+        }
+        summary {
+            padding: 1rem 1.2rem;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: background 0.2s;
+        }
+        summary:hover { background: rgba(245,158,11,0.05); }
+        summary::marker { content: ''; }
+        summary::before {
+            content: '▶';
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+            color: var(--accent);
+        }
+        details[open] summary::before { transform: rotate(90deg); }
+        .detail-content {
+            padding: 0 1.2rem 1.2rem;
+            color: var(--text-dim);
+            line-height: 1.8;
+        }
+        .detail-content code {
+            background: rgba(245,158,11,0.1);
+            color: var(--accent);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .detail-content pre {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 0.8rem 0;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .detail-content ul {
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .detail-content li {
+            margin-bottom: 0.3rem;
+        }
+
+        /* Agent cards */
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .agent-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            transition: all 0.3s;
+        }
+        .agent-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .agent-card .agent-name {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .agent-card .agent-role {
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+        }
+        .agent-card .agent-desc {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        /* Review section */
+        .review-box {
+            border-left: 3px solid;
+            padding: 1rem 1.5rem;
+            margin: 0.8rem 0;
+            border-radius: 0 8px 8px 0;
+            background: var(--surface-2);
+        }
+        .review-box.pros { border-color: var(--green); }
+        .review-box.cons { border-color: var(--red); }
+        .review-box.tips { border-color: var(--blue); }
+        .review-box h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .review-box.pros h4 { color: var(--green); }
+        .review-box.cons h4 { color: var(--red); }
+        .review-box.tips h4 { color: var(--blue); }
+        .review-box ul {
+            padding-left: 1.2rem;
+            color: var(--text-dim);
+        }
+        .review-box li {
+            margin-bottom: 0.3rem;
+            line-height: 1.6;
+        }
+
+        /* Score */
+        .score-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .score-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            min-width: 60px;
+        }
+        .score-dots {
+            display: flex;
+            gap: 4px;
+        }
+        .score-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+        .score-dot.filled { background: var(--accent); }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .modal-header h3 { font-size: 1.2rem; }
+        .modal-close {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover { border-color: var(--accent); }
+        .modal-body {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.8;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        /* Button */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            border-color: var(--accent);
+            background: rgba(245,158,11,0.1);
+        }
+
+        /* Interactive section */
+        .note-area {
+            width: 100%;
+            min-height: 120px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            color: var(--text);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .note-area:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .note-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .saved-note {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        .saved-note .note-time {
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-bottom: 0.3rem;
+        }
+        #saved-notes { margin-top: 1rem; }
+
+        /* Links */
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Highlight tag */
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .tag-orange { background: rgba(245,158,11,0.15); color: var(--accent); }
+        .tag-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+        .tag-green { background: rgba(34,197,94,0.15); color: var(--green); }
+        .tag-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+        .tag-pink { background: rgba(236,72,153,0.15); color: var(--pink); }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header h1 { font-size: 1.6rem; }
+            .section { padding: 1.2rem; }
+            .agent-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-content">
+        <div class="series-tag">⚡ SKILL 日报 #002</div>
+        <h1>Content Factory — 多智能体内容工厂</h1>
+        <p class="subtitle">一份素材进，五种格式出。五个 AI 角色协作的内容流水线，把"写一篇文章"变成"生产一个内容矩阵"。</p>
+        <div class="meta-bar">
+            <div class="meta-item"><span class="dot" style="background:var(--accent)"></span> 2026-03-30</div>
+            <div class="meta-item"><span class="dot" style="background:var(--green)"></span> 内容创作</div>
+            <div class="meta-item"><span class="dot" style="background:var(--purple)"></span> 多智能体协作</div>
+            <div class="meta-item"><span class="dot" style="background:var(--blue)"></span> 作者: Carson Jarvis</div>
+        </div>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Overview -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📦</span> Skill 概述</div>
+        <div class="overview-card">
+            <div class="one-liner">一句话：一份内容 → 多平台发布，五个专业 Agent 各司其职的内容流水线。</div>
+            <p>Content Factory 是一个<strong>结构化的多智能体内容生产系统</strong>。它不是让一个 AI 干所有事，而是设计了五个专门的角色——Writer（写手）、Remixer（混剪师）、Editor（编辑）、Scriptwriter（编剧）和 Headline Machine（标题机器）——每个角色有自己的工作模板、质量标准和输出格式。</p>
+            <br>
+            <p>你可以跑完整流水线（从草稿到全平台内容），也可以单独调用任何一个 Agent。核心哲学很朴素：<strong>别重复造轮子，一份好内容值得在每个平台都被看见</strong>。</p>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="num">5</div>
+                <div class="label">专业 Agent 角色</div>
+            </div>
+            <div class="stat-card">
+                <div class="num">10+</div>
+                <div class="label">Prompt 模板文件</div>
+            </div>
+            <div class="stat-card">
+                <div class="num">11</div>
+                <div class="label">支持的输出格式</div>
+            </div>
+            <div class="stat-card">
+                <div class="num">$9</div>
+                <div class="label">原始售价</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Philosophy -->
+    <div class="section">
+        <div class="section-title"><span class="icon">🧠</span> 核心理念</div>
+        <div style="color:var(--text-dim); line-height:1.8;">
+            <p style="margin-bottom:1rem;">Content Factory 的设计哲学建立在三个关键洞察上：</p>
+            
+            <p style="margin-bottom:0.8rem;"><strong style="color:var(--accent);">1. 角色分工 > 全能选手</strong><br>
+            与其让一个 AI 又写又编又排，不如让五个"专家"各管一段。Writer 负责初稿质量，Editor 负责精简打磨，Remixer 负责平台适配——每一环的 Prompt 都是为那个具体任务深度优化的。这就像一个真实的出版社编辑部，而非一个全干的自媒体人。</p>
+            
+            <p style="margin-bottom:0.8rem;"><strong style="color:var(--accent);">2. 品牌一致性是刚需</strong><br>
+            跨平台内容最怕的不是量不够，是声音不统一。Content Factory 用 Voice Cloner 和统一的内容原则确保同一条信息在 Twitter、LinkedIn、邮件里虽然形态不同，但人格一致。</p>
+            
+            <p><strong style="color:var(--accent);">3. 流程可拆可组</strong><br>
+            你可以跑全流水线，也可以只叫一个 Agent 干活。这种模块化设计意味着它不是一个"用了就得全用"的臃肿系统，而是一个灵活的工具箱。</p>
+        </div>
+    </div>
+
+    <!-- Workflow / Pipeline -->
+    <div class="section">
+        <div class="section-title"><span class="icon">⚙️</span> 工作流程</div>
+        <div class="pipeline">
+            <div class="pipeline-step">
+                <div class="step-icon" style="background:rgba(245,158,11,0.15);">📝</div>
+                <div class="step-info">
+                    <h4>输入素材</h4>
+                    <p>话题 / 研究资料 / 脑暴笔记 / 既有文章</p>
+                </div>
+            </div>
+            <div class="pipeline-arrow">↓</div>
+            <div class="pipeline-step">
+                <div class="step-icon" style="background:rgba(59,130,246,0.15);">✍️</div>
+                <div class="step-info">
+                    <h4>Writer — 写手 Agent</h4>
+                    <p>将零散素材变成结构化长文。从读者的痛点切入，而非从话题切入。</p>
+                </div>
+            </div>
+            <div class="pipeline-arrow">↓</div>
+            <div class="pipeline-step">
+                <div class="step-icon" style="background:rgba(239,68,68,0.15);">✂️</div>
+                <div class="step-info">
+                    <h4>Editor — 编辑 Agent</h4>
+                    <p>五轮审稿：清晰度手术→故事流→声音一致性→质量检查→技术打磨。砍掉30%。</p>
+                </div>
+            </div>
+            <div class="pipeline-arrow">↓ 分支并行</div>
+            <div class="pipeline-step">
+                <div class="step-icon" style="background:rgba(168,85,247,0.15);">🔄</div>
+                <div class="step-info">
+                    <h4>Remixer — 混剪师 Agent</h4>
+                    <p>一篇文章拆成11种格式：Twitter thread、LinkedIn、邮件、Instagram、Reddit、Slide……</p>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-icon" style="background:rgba(236,72,153,0.15);">🎬</div>
+                <div class="step-info">
+                    <h4>Scriptwriter — 编剧 Agent</h4>
+                    <p>30秒短视频脚本，含视觉方向标注。Hook(3s)→核心(20s)→收尾(7s)。</p>
+                </div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-icon" style="background:rgba(34,197,94,0.15);">🎯</div>
+                <div class="step-info">
+                    <h4>Headline Machine — 标题机器 Agent</h4>
+                    <p>8种标题公式，批量生成20个标题，按预估CTR排序。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Five Agents (Detail) -->
+    <div class="section">
+        <div class="section-title"><span class="icon">👥</span> 五大 Agent 角色详解</div>
+        <div class="agent-grid">
+            <div class="agent-card">
+                <div class="agent-name">✍️ Writer</div>
+                <div class="agent-role">写手 — 初稿引擎</div>
+                <div class="agent-desc">输入：话题+研究+脑暴笔记<br>输出：文章、论述文、指南、Newsletter<br>核心原则：从读者的痛点出发，不是从话题出发。用故事开头，不是用信息开头。</div>
+            </div>
+            <div class="agent-card">
+                <div class="agent-name">🔄 Remixer</div>
+                <div class="agent-role">混剪师 — 格式炼金术士</div>
+                <div class="agent-desc">输入：一篇成稿<br>输出：11种平台原生格式<br>核心能力：提取核心信息→识别情绪钩子→适配平台调性→保持消息完整性。</div>
+            </div>
+            <div class="agent-card">
+                <div class="agent-name">✂️ Editor</div>
+                <div class="agent-role">编辑 — 清晰度外科医生</div>
+                <div class="agent-desc">五轮审稿流程：砍30%字数→优化故事线→统一声音→质量红线→技术打磨。输出编辑报告，包含修改量化数据。</div>
+            </div>
+            <div class="agent-card">
+                <div class="agent-name">🎬 Scriptwriter</div>
+                <div class="agent-role">编剧 — 动画导演</div>
+                <div class="agent-desc">视觉优先思维。每一句话配一个画面指令。3秒钩子决定观众去留。脚本格式含 HOOK/BODY/CLOSE 三幕。</div>
+            </div>
+            <div class="agent-card">
+                <div class="agent-name">🎯 Headline Machine</div>
+                <div class="agent-role">标题机器 — 钩子工厂</div>
+                <div class="agent-desc">8种标题公式（数字+收益、提问、How-to、反直觉、具体结果、警告、前后对比、秘密），批量出20个，按CTR排序。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Features (Collapsible) -->
+    <div class="section">
+        <div class="section-title"><span class="icon">🔑</span> 关键功能模式</div>
+
+        <details>
+            <summary><span class="tag tag-orange">Prompt 模板</span> First Draft — 脑暴笔记→结构化文章</summary>
+            <div class="detail-content">
+                <p>这是 Writer Agent 最常用的模板。你丢进去一堆零散笔记，它帮你组织成一篇完整文章。</p>
+                <p><strong>结构：</strong></p>
+                <ul>
+                    <li><strong>Hook（5%）</strong> — 1-2句，用一个具体场景或问题抓住读者</li>
+                    <li><strong>Setup（15%）</strong> — 为什么这件事此刻对读者重要</li>
+                    <li><strong>Body（60%）</strong> — 3-5个小节，每节一个清晰论点，H2 子标题</li>
+                    <li><strong>Close（20%）</strong> — 一个明确的行动步骤或反思提示</li>
+                </ul>
+                <p><strong>关键指令：</strong>"保留我的想法和例子——不要替换成通用的"。这一条很重要，防止 AI 把你的独特素材洗成通稿。</p>
+                <pre>// 使用示例
+"Act as the Writer agent. Write a 1,200-word article on [topic] 
+for [target audience]. Use the first-draft template."</pre>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-purple">Prompt 模板</span> Remix Engine — 一篇文章→11种格式</summary>
+            <div class="detail-content">
+                <p>Remixer Agent 的核心模板。给它一篇成稿，它同时输出所有平台格式。</p>
+                <p><strong>支持的11种输出格式：</strong></p>
+                <ul>
+                    <li>Twitter/X Thread（8-10条，第一条必须是停止滑动的钩子）</li>
+                    <li>LinkedIn Post（150字，以洞察开头，以问题结尾）</li>
+                    <li>Email Newsletter Section（含主题行+预览文本，亲密语气）</li>
+                    <li>Slide Deck Outline（8页，每页一个想法）</li>
+                    <li>Executive Summary（三段：What, So What, Now What）</li>
+                    <li>FAQ Section（5个真实问题，对话式回答）</li>
+                    <li>Pull Quotes（5条推文级金句，每条&lt;280字符）</li>
+                    <li>Podcast Script Intro（2分钟阅读量，对话风）</li>
+                    <li>Instagram Caption（100字+10个hashtag）</li>
+                    <li>Reddit Post（200字，零营销味，真诚讨论风）</li>
+                    <li>30秒动画脚本（3个变体，含视觉方向标注）</li>
+                </ul>
+                <p><strong>质量检查清单：</strong>核心信息跨格式一致、每种格式原生感、无营销腔、动画脚本有情绪落点。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-green">Prompt 模板</span> Clarity Surgery — 30% 瘦身手术</summary>
+            <div class="detail-content">
+                <p>Editor Agent 的核心工具。输入一段文本，输出精简30%的版本。</p>
+                <p><strong>手术刀清单：</strong></p>
+                <ul>
+                    <li>砍掉废话填充词</li>
+                    <li>消灭被动语态</li>
+                    <li>把模糊词（perhaps, might, could, somewhat）全部替换</li>
+                    <li>抽象名词→具体动词</li>
+                    <li>超过20个词的句子→拆开</li>
+                    <li>杀掉不创造价值的副词</li>
+                </ul>
+                <p><strong>输出：</strong>不只给你结果，还告诉你修改前后字数对比 + 3个最重要的改动及原因。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-blue">Prompt 模板</span> Argument Builder — 说服力论述引擎</summary>
+            <div class="detail-content">
+                <p>当你需要写观点文/说服性文章时使用。</p>
+                <p><strong>8段式结构：</strong></p>
+                <ul>
+                    <li><strong>Hook（5%）</strong> — 惊人数据、具体故事或问题</li>
+                    <li><strong>Problem（15%）</strong> — 建立"哪里坏了"以及为什么重要</li>
+                    <li><strong>Current Solutions（15%）</strong> — 公平但批判地评估现有方案</li>
+                    <li><strong>Thesis（5%）</strong> — 一句话论点，不含糊</li>
+                    <li><strong>Evidence（35%）</strong> — 3-5个支撑点，每个含数据+专家意见+真实案例</li>
+                    <li><strong>Counterarguments（10%）</strong> — 正面回应最强的2个反对意见</li>
+                    <li><strong>Implications（10%）</strong> — 如果你对了，世界会怎样</li>
+                    <li><strong>Call to Action（5%）</strong> — 一个具体的行动步骤</li>
+                </ul>
+                <p><strong>核心原则：</strong>"Steel-man the opposition"——用对手最强版本的论点来反驳，而非稻草人。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-pink">Prompt 模板</span> Story Overlay — 把无聊变精彩</summary>
+            <div class="detail-content">
+                <p>当你有一堆正确但无聊的信息时，这个模板给它加上叙事骨架。</p>
+                <p><strong>三幕结构：</strong></p>
+                <ul>
+                    <li><strong>ACT 1 — Setup（20%）</strong>：从读者认得的一个具体场景开始，引入主角，建立赌注</li>
+                    <li><strong>ACT 2 — Conflict（60%）</strong>：展示障碍和失败的尝试，构建"但是然后……"的转折，这里是所有事实内容的主战场</li>
+                    <li><strong>ACT 3 — Resolution（20%）</strong>：揭示解决方案，展示前后对比，以赢得感的行动建议收尾</li>
+                </ul>
+                <p><strong>规则：</strong>保留所有原始事实——添加叙事组织，不替换实质内容。故事服务于真相，不是反过来。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-orange">Prompt 模板</span> Empathy Rewrite — 技术内容人话翻译</summary>
+            <div class="detail-content">
+                <p>把专业内容翻译成普通人能懂的语言。</p>
+                <p><strong>对每个专业术语执行三步：</strong></p>
+                <ul>
+                    <li>用一句话定义它</li>
+                    <li>给一个日常生活的类比或具体例子</li>
+                    <li>解释为什么这对读者个人很重要</li>
+                </ul>
+                <p><strong>结构四问：</strong>这是什么？→ 我为什么该在乎？→ 它怎么工作的？→ 我下一步该干嘛？</p>
+                <p><strong>终极测试：</strong>"一个晚上10点已经累了的妈妈能不能看懂这段话，并且知道该做什么？"如果不行，再简化一轮。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-purple">Prompt 模板</span> Research Pipeline — 从资料到原创文章</summary>
+            <div class="detail-content">
+                <p>当你有一堆研究资料/URL/摘录时，用这个模板把它们变成原创文章。</p>
+                <p><strong>五步流程：</strong></p>
+                <ul>
+                    <li><strong>Extract</strong> — 从每个来源提取关键论点、数据、引用，标注出处</li>
+                    <li><strong>Find the Thread</strong> — 找到贯穿所有来源的叙事线，用一句话概括"所以呢？"</li>
+                    <li><strong>Add Original Analysis</strong> — 不只是摘要！为每个要点加上对读者的意义分析</li>
+                    <li><strong>Structure</strong> — 用最惊人的发现开头，3-5主要段落，段落间有过渡逻辑</li>
+                    <li><strong>Cite</strong> — 自然引用，0%直接抄袭，未验证的标记 [NEEDS VERIFICATION]</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-green">内容原则</span> 写作红线与反面清单</summary>
+            <div class="detail-content">
+                <p>Content Factory 有一份非常实用的<strong>写作反面清单</strong>，所有 Agent 都遵守：</p>
+                <p><strong>✅ 必须做到：</strong></p>
+                <ul>
+                    <li>每篇内容只讲一个观点</li>
+                    <li>具体 > 模糊（"我们把生产时间缩短60%" vs "我们提高了效率"）</li>
+                    <li>展示，不要告诉</li>
+                    <li>用最有趣的东西开头</li>
+                </ul>
+                <p><strong>🚫 绝不使用的词：</strong></p>
+                <ul>
+                    <li>"delve," "tapestry," "leverage," "harness," "utilize"</li>
+                    <li>"excited to announce," "game-changer," "revolutionary," "disruptive"</li>
+                    <li>"at the end of the day," "in today's fast-paced world," "now more than ever"</li>
+                    <li>任何可以套在任何公司身上的万能句</li>
+                </ul>
+                <p><strong>人味测试：</strong>"一个真人会这样跟朋友说话吗？"——如果不会，重写。</p>
+            </div>
+        </details>
+
+        <details>
+            <summary><span class="tag tag-blue">高级用法</span> 子 Agent 并行生产</summary>
+            <div class="detail-content">
+                <p>Content Factory 支持用 <code>sessions_spawn</code> 并行启动多个 Agent，适合大批量内容生产：</p>
+                <pre>// 启动 Writer 写长文
+sessions_spawn --task "Act as the Writer agent. 
+Write a 1,500-word article on [topic] for [audience]."
+
+// Writer 完成后，同时启动 Remixer + Scriptwriter + Headline Machine
+sessions_spawn --task "Act as the Remixer. 
+Remix this article into: Twitter, LinkedIn, email, captions."
+
+sessions_spawn --task "Act as the Scriptwriter. 
+Write 3 variations of a 30-sec hook script."
+
+sessions_spawn --task "Act as the Headline Machine.
+Generate 20 headlines, sort by estimated CTR."</pre>
+                <p>这样一篇文章从初稿到全平台内容，可以并行完成后半段工作。</p>
+            </div>
+        </details>
+    </div>
+
+    <!-- View SKILL.md -->
+    <div class="section">
+        <div class="section-title"><span class="icon">📄</span> SKILL.md 原文</div>
+        <p style="color:var(--text-dim); margin-bottom:1rem;">点击下方按钮查看完整的 SKILL.md 原始文件。</p>
+        <button class="btn" onclick="document.getElementById('skillModal').classList.add('active')">📄 查看 SKILL.md 原文</button>
+    </div>
+
+    <!-- References -->
+    <div class="section">
+        <div class="section-title"><span class="icon">🔗</span> 参考资料</div>
+        <div style="color:var(--text-dim);">
+            <ul style="padding-left:1.2rem; line-height:2;">
+                <li><strong>作者：</strong>Carson Jarvis (<a href="https://twitter.com/CarsonJarvisAI" target="_blank">@CarsonJarvisAI</a>)</li>
+                <li><strong>更多 Skill：</strong><a href="https://larrybrain.com" target="_blank">larrybrain.com</a></li>
+                <li><strong>Skill 市场路径：</strong><code>~/.workbuddy/skills-marketplace/skills/content-factory/</code></li>
+                <li><strong>包含文件：</strong>SKILL.md + README.md + 8个 Prompt 模板（prompts/ 目录）</li>
+                <li><strong>灵感来源：</strong>出版社编辑部的角色分工模式 — 而非一人多能的自媒体模式</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Buddy Review -->
+    <div class="section">
+        <div class="section-title"><span class="icon">🌶️</span> Buddy 辣评</div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <span class="score-label">实用性</span>
+                <div class="score-dots">
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                </div>
+            </div>
+            <div class="score-item">
+                <span class="score-label">设计感</span>
+                <div class="score-dots">
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot"></div>
+                </div>
+            </div>
+            <div class="score-item">
+                <span class="score-label">门槛</span>
+                <div class="score-dots">
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot"></div>
+                    <div class="score-dot"></div>
+                    <div class="score-dot"></div>
+                </div>
+            </div>
+            <div class="score-item">
+                <span class="score-label">中文适配</span>
+                <div class="score-dots">
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot filled"></div>
+                    <div class="score-dot"></div>
+                    <div class="score-dot"></div>
+                    <div class="score-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="review-box pros">
+            <h4>👍 优点</h4>
+            <ul>
+                <li><strong>角色分工思路极好。</strong>这是我见过对"多 Agent 协作"最落地的设计之一。不是空谈"多智能体"概念，而是每个 Agent 都有明确的输入/输出/质量标准/Prompt 模板。拿来就能用。</li>
+                <li><strong>Prompt 模板质量极高。</strong>尤其是 Argument Builder 的8段式结构和 Clarity Surgery 的手术刀清单，这些不只是给 AI 的 Prompt——即使人类编辑自己用，也是一套很好的写作方法论。</li>
+                <li><strong>写作反面清单太实用了。</strong>"delve/tapestry/leverage"这些 AI 味词汇黑名单、"人味测试"——这些规则让产出真的少一些 AI 味。</li>
+                <li><strong>Remix Engine 的格式覆盖广。</strong>11种输出格式基本覆盖了主流内容分发渠道，Reddit post 那个"零营销味"的要求特别懂行。</li>
+                <li><strong>模块化设计灵活。</strong>全流水线或单个 Agent 都能用，不绑定。</li>
+            </ul>
+        </div>
+
+        <div class="review-box cons">
+            <h4>👎 缺点</h4>
+            <ul>
+                <li><strong>明显面向英文写作市场。</strong>平台以 Twitter/LinkedIn/Instagram 为主，没有微信公众号、小红书、知乎、B站等中文平台适配。对中国创作者来说，至少一半输出格式需要重新设计。</li>
+                <li><strong>带有强烈的宗教/育儿垂类烙印。</strong>多个模板里出现"theological guardrails""Christian mom, 28-42""conditional love"等特定受众标签，这说明它最初是为一个宗教育儿品牌定制的，通用性打折扣。</li>
+                <li><strong>声称10个 Prompt 文件，实际缺失2个。</strong><code>headlines.md</code> 和 <code>voice-cloner.md</code> 在 SKILL.md 中提到但并不存在，文件结构声明和实际不一致。$9 的付费产品不该有这种缺漏。</li>
+                <li><strong>没有实际的自动化脚本。</strong>所谓"多智能体"依赖用户手动用 Prompt 调度，没有真正的编排层。sub-agent spawn 只是一个调用建议，不是内置能力。</li>
+                <li><strong>缺乏效果评估闭环。</strong>生产出11种格式很酷，但没有任何机制追踪哪种格式表现好、哪些标题真的带来了点击。有生产没复盘。</li>
+            </ul>
+        </div>
+
+        <div class="review-box tips">
+            <h4>💡 适用建议</h4>
+            <ul>
+                <li><strong>最适合：</strong>英文内容创作者，尤其是个人品牌/自媒体/教育类创作者。如果你每周写1篇深度内容然后分发到多个英文平台，这个 Skill 能帮你省几个小时。</li>
+                <li><strong>对 Rosetta 的价值：</strong>核心价值不在直接使用，而在<strong>学习它的设计思路</strong>。角色分工模式、Prompt 模板设计、写作反面清单——这些方法论可以迁移到中文内容生产场景。特别是百科项目可以参考它的 Editor Agent 五轮审稿流程来提升条目质量。</li>
+                <li><strong>改造建议：</strong>如果要做中文版，把 Remixer 的输出格式换成公众号/小红书/知乎/B站/飞书文档，把写作反面清单里加上中文 AI 味词汇（"赋能""沉淀""打造"等），就能变成一个很好的中文内容工厂。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Interactive -->
+    <div class="section">
+        <div class="section-title"><span class="icon">💬</span> 学习心得</div>
+        <p style="color:var(--text-dim); margin-bottom:1rem; font-size:0.9rem;">记录你对 Content Factory 的思考、想法或应用灵感。</p>
+        <textarea class="note-area" id="noteInput" placeholder="写下你的学习心得...&#10;&#10;比如：Content Factory 的角色分工思路可以用在我们百科项目的..."></textarea>
+        <div class="note-actions">
+            <button class="btn" onclick="saveNote()">💾 保存心得</button>
+            <button class="btn" onclick="clearNotes()">🗑️ 清空记录</button>
+        </div>
+        <div id="saved-notes"></div>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <p>⚡ Skill 日报 — 每天拆解一个有趣的 AI Skill</p>
+    <p style="margin-top:0.5rem;">Powered by Buddy × Rosetta | <a href="index.html">返回首页</a></p>
+</div>
+
+<!-- SKILL.md Modal -->
+<div class="modal-overlay" id="skillModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>📄 SKILL.md — Content Factory</h3>
+            <button class="modal-close" onclick="document.getElementById('skillModal').classList.remove('active')">✕</button>
+        </div>
+        <div class="modal-body">---
+name: content-factory
+description: "Multi-agent content production system. One piece of source content becomes many formats — social posts, email, scripts, headlines, and more. Five specialized agent personas: Writer, Remixer, Editor, Scriptwriter, and Headline Machine."
+version: 1.0.0
+---
+
+# Content Factory — Multi-Agent Content Production System
+
+> One source → many formats. One system → consistent brand voice.
+
+## What This Is
+
+Content Factory is a structured system for content production. Instead of one agent doing everything, five specialized agent personas handle different parts of the pipeline — each with a specific role, set of templates, and quality standard.
+
+Load this skill when:
+- User wants to create content from scratch, a topic, or a research dump
+- User has one piece of content and wants it adapted to multiple platforms
+- User needs consistent brand voice across formats
+- User wants a repeatable content production process
+
+## The Agent Roster
+
+| Agent | Role | Input | Output |
+|-------|------|-------|--------|
+| Writer | Long-form drafts | Topic + research + brain dump | Articles, essays, guides, newsletters |
+| Remixer | One-to-many adaptation | Finished source content | Twitter thread, LinkedIn, email, captions, scripts |
+| Editor | Clarity + polish + voice | Draft content | Publication-ready content |
+| Scriptwriter | Video + animation scripts | Topic or source content | 30-sec hooks, episode scripts, reels |
+| Headline Machine | Headlines + hooks | Topic + audience + angle | 20 headlines ranked by estimated CTR |
+
+## The Pipeline
+
+Topic/Research/Brain Dump
+        ↓
+    [WRITER] → Long-form draft
+        ↓
+    [EDITOR] → Clarity + polish pass
+        ↓
+    [REMIXER] → Twitter, LinkedIn, Email, Captions...
+    [SCRIPTWRITER] → Video scripts
+    [HEADLINE MACHINE] → Distribution hooks
+
+## Content Principles (All Agents)
+
+Write this:
+- One idea per piece of content
+- Specific beats vague
+- Show, don't tell
+- Lead with the interesting thing
+
+Never write this:
+- "delve," "tapestry," "leverage," "harness," "utilize"
+- "excited to announce," "game-changer," "revolutionary," "disruptive"
+- "at the end of the day," "in today's fast-paced world," "now more than ever"
+
+The human test: "Would a real person say this out loud to a friend?"
+
+## File Structure
+
+content-factory/
+├── SKILL.md
+├── README.md
+└── prompts/
+    ├── first-draft.md          ← Brain dump → structured article
+    ├── argument-builder.md     ← Thesis → persuasive essay
+    ├── clarity-pass.md         ← Cut 30%, remove jargon
+    ├── remix-engine.md         ← One piece → 10 formats
+    ├── research-pipeline.md    ← Sources → original article
+    ├── empathy-rewrite.md      ← Technical → accessible
+    ├── story-overlay.md        ← Information → narrative
+    └── polish-pass.md          ← Final edit checklist
+
+Content Factory v1.0 — February 2026
+A product by Carson Jarvis (@CarsonJarvisAI)</div>
+    </div>
+</div>
+
+<script>
+    // Notes functionality
+    function saveNote() {
+        const input = document.getElementById('noteInput');
+        const text = input.value.trim();
+        if (!text) return;
+        
+        const notes = JSON.parse(localStorage.getItem('skill-notes-002') || '[]');
+        notes.unshift({
+            text: text,
+            time: new Date().toLocaleString('zh-CN')
+        });
+        localStorage.setItem('skill-notes-002', JSON.stringify(notes));
+        input.value = '';
+        renderNotes();
+    }
+    
+    function clearNotes() {
+        if (confirm('确定清空所有学习心得？')) {
+            localStorage.removeItem('skill-notes-002');
+            renderNotes();
+        }
+    }
+    
+    function renderNotes() {
+        const notes = JSON.parse(localStorage.getItem('skill-notes-002') || '[]');
+        const container = document.getElementById('saved-notes');
+        container.innerHTML = notes.map(n => `
+            <div class="saved-note">
+                <div class="note-time">${n.time}</div>
+                <div>${n.text}</div>
+            </div>
+        `).join('');
+    }
+    
+    renderNotes();
+    
+    // Close modal on overlay click
+    document.getElementById('skillModal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('skillModal').classList.remove('active');
+        }
+    });
+</script>
+
+</body>
+</html>
