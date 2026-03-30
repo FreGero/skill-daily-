@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill 日报 #003 — 小红书 MCP 内容工具箱</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card: #1a1a2e;
+    --card2: #16213e;
+    --accent: #e94560;
+    --accent2: #0f3460;
+    --text: #e0e0e0;
+    --text2: #a0a0a0;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --red: #ff6b6b;
+    --orange: #ff922b;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 60px 24px 40px;
+    text-align: center;
+    border-bottom: 3px solid var(--accent);
+  }
+  .hero .issue { color: var(--accent); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+  .hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  .hero .subtitle { color: var(--text2); font-size: 18px; margin-bottom: 20px; }
+  .hero .tags { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .hero .tag { background: rgba(233,69,96,0.2); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+  .meta-bar {
+    display: flex; justify-content: center; gap: 32px; padding: 16px; background: var(--card);
+    font-size: 14px; color: var(--text2); border-bottom: 1px solid #333; flex-wrap: wrap;
+  }
+  .meta-bar span { display: flex; align-items: center; gap: 6px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  .action-bar { display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(15,52,96,0.3); flex-wrap: wrap; }
+  .action-btn {
+    padding: 8px 20px; border-radius: 8px; border: 1px solid var(--accent);
+    background: transparent; color: var(--accent); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block;
+  }
+  .action-btn:hover { background: var(--accent); color: #fff; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--card); border: 1px solid #444; border-radius: 16px;
+    width: 90%; max-width: 900px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; border-bottom: 1px solid #333;
+  }
+  .modal-header h3 { font-size: 18px; }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 28px; cursor: pointer; }
+  .modal-close:hover { color: var(--accent); }
+  .modal-body {
+    padding: 24px; overflow-y: auto; font-size: 14px; line-height: 1.8; color: var(--text2);
+    font-family: 'Consolas', 'Monaco', monospace; white-space: pre-wrap; word-break: break-word;
+  }
+
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 16px;
+    padding-left: 16px; border-left: 4px solid var(--accent);
+  }
+
+  .card {
+    background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    border: 1px solid #2a2a4a;
+  }
+  .card h3 { color: var(--accent); font-size: 18px; margin-bottom: 12px; }
+  .card p, .card li { color: var(--text2); font-size: 15px; line-height: 1.8; }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(233,69,96,0.1), rgba(15,52,96,0.2));
+    border: 1px solid var(--accent);
+    border-radius: 12px; padding: 24px; margin-bottom: 16px;
+  }
+  .highlight-box h3 { color: #fff; }
+
+  .arch-diagram {
+    background: var(--card2); border-radius: 12px; padding: 24px; margin: 16px 0;
+    border: 1px solid #2a2a4a; font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px; line-height: 1.6; color: var(--blue); overflow-x: auto;
+    white-space: pre;
+  }
+
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step { display: flex; gap: 16px; padding: 16px 0; }
+  .flow-dot {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+    background: var(--accent2); color: var(--blue); border: 2px solid var(--blue);
+  }
+  .flow-content h4 { font-size: 16px; margin-bottom: 4px; }
+  .flow-content p { font-size: 14px; color: var(--text2); }
+  .flow-arrow { text-align: center; color: var(--text2); font-size: 20px; margin: -8px 0; padding-left: 10px; }
+
+  .pattern-list { counter-reset: pattern; }
+  .pattern-item {
+    background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 12px;
+    border: 1px solid #2a2a4a; cursor: pointer; transition: all 0.2s;
+  }
+  .pattern-item:hover { border-color: var(--accent); }
+  .pattern-header { display: flex; align-items: center; gap: 12px; }
+  .pattern-num {
+    background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pattern-name { font-size: 16px; font-weight: 600; flex: 1; }
+  .pattern-toggle { color: var(--text2); font-size: 20px; transition: transform 0.2s; }
+  .pattern-body { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #333; }
+  .pattern-item.open .pattern-body { display: block; }
+  .pattern-item.open .pattern-toggle { transform: rotate(180deg); }
+
+  .cmd-block {
+    background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+    padding: 16px; margin: 12px 0; font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px; color: var(--green); overflow-x: auto; line-height: 1.6;
+  }
+  .cmd-block .comment { color: #6e7681; }
+  .cmd-block .highlight { color: var(--yellow); }
+
+  .tool-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .tool-table th { background: var(--accent2); color: var(--blue); padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--accent); }
+  .tool-table td { padding: 10px 12px; border-bottom: 1px solid #2a2a4a; color: var(--text2); }
+  .tool-table tr:hover td { background: rgba(96,165,250,0.05); }
+
+  .ref-link {
+    display: block; background: var(--card2); border-radius: 8px; padding: 14px 18px;
+    margin-bottom: 8px; text-decoration: none; color: var(--text);
+    border: 1px solid #2a2a4a; transition: all 0.2s;
+  }
+  .ref-link:hover { border-color: var(--blue); }
+  .ref-link .ref-title { font-weight: 600; }
+  .ref-link .ref-desc { font-size: 13px; color: var(--text2); }
+
+  .verdict-box {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    border: 2px solid var(--green); border-radius: 16px; padding: 32px; text-align: center;
+  }
+  .verdict-box h3 { color: var(--green); font-size: 24px; margin-bottom: 16px; }
+  .stars { font-size: 28px; margin-bottom: 12px; }
+
+  .interact-section { margin-top: 40px; padding: 32px; background: var(--card); border-radius: 16px; border: 1px solid #2a2a4a; }
+  .interact-section h3 { color: var(--accent); margin-bottom: 16px; }
+  .interact-section textarea {
+    width: 100%; height: 100px; background: #0f0f0f; color: var(--text);
+    border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 14px;
+    resize: vertical; font-family: inherit;
+  }
+  .interact-section textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px; border-radius: 8px; border: none; font-size: 14px;
+    cursor: pointer; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #d63851; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid #555; }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .footer { text-align: center; padding: 40px 16px; color: var(--text2); font-size: 13px; border-top: 1px solid #222; margin-top: 40px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .badge-easy { background: rgba(74,222,128,0.2); color: var(--green); }
+  .badge-content { background: rgba(251,191,36,0.2); color: var(--yellow); }
+  .badge-must { background: rgba(233,69,96,0.2); color: var(--accent); }
+  .badge-warn { background: rgba(255,107,107,0.2); color: var(--red); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
+  .stat-card { background: var(--card2); border-radius: 10px; padding: 16px; text-align: center; border: 1px solid #2a2a4a; }
+  .stat-card .num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat-card .label { font-size: 13px; color: var(--text2); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="issue">SKILL 日报 · 第 003 期 · 2026.03.30</div>
+  <h1>📕 小红书 MCP Skill</h1>
+  <div class="subtitle">用命令行驾驭小红书 — 搜索、发布、互动、数据分析一站搞定</div>
+  <div class="tags">
+    <span class="tag">内容运营</span>
+    <span class="tag">小红书</span>
+    <span class="tag">MCP 协议</span>
+    <span class="tag">自动化</span>
+    <span class="tag">热点追踪</span>
+  </div>
+</div>
+
+<div class="meta-bar">
+  <span>📦 SKILL.md 5.6 KB</span>
+  <span>📜 15 个脚本文件</span>
+  <span>🔧 依赖 xiaohongshu-mcp + jq</span>
+  <span>🏷️ 基于 MCP 协议</span>
+</div>
+
+<div class="action-bar">
+  <button class="action-btn" onclick="document.getElementById('sourceModal').classList.add('active')">📄 查看 SKILL.md 原文</button>
+  <a href="https://github.com/xpzouying/xiaohongshu-mcp" target="_blank" class="action-btn">🔗 xiaohongshu-mcp 项目</a>
+</div>
+
+<div class="container">
+
+  <!-- 一句话概述 -->
+  <div class="section">
+    <div class="section-title">这个 Skill 是什么？</div>
+    <div class="highlight-box">
+      <h3>一句话：把小红书变成一个可编程的内容平台——搜索、读帖、发帖、评论、追热点，全部用命令行搞定。</h3>
+      <p style="margin-top:12px; color:var(--text2)">
+        这不是一个"教 AI 怎么写小红书"的 Prompt Skill。这是一套<strong>完整的工程化工具集</strong>：15 个 Shell/Python 脚本，通过 MCP（Model Context Protocol）协议连接小红书的底层能力，让 AI 助手可以直接操作你的小红书账号——搜索内容、获取帖子详情和评论、发布图文/视频、追踪热点话题并自动生成分析报告。
+      </p>
+    </div>
+  </div>
+
+  <!-- 数据面板 -->
+  <div class="section">
+    <div class="section-title">Skill 数据面板</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="num">15</div>
+        <div class="label">脚本文件</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">12</div>
+        <div class="label">MCP 工具接口</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">2</div>
+        <div class="label">Python 工具</div>
+      </div>
+      <div class="stat-card">
+        <div class="num">13</div>
+        <div class="label">Shell 脚本</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 为什么值得学 -->
+  <div class="section">
+    <div class="section-title">为什么值得关注？</div>
+    <div class="card">
+      <p>小红书是目前中文互联网最有"内容价值"的平台之一——用户质量高、内容消费意愿强、种草转化率碾压其他平台。但<strong>小红书的运营全靠手动</strong>：搜关键词、看竞品、分析评论、定选题、写内容、发帖……每一步都是人肉操作。</p>
+      <p style="margin-top:12px;">这个 Skill 做的事，是把这条链路的关键节点都"API 化"了。虽然它目前还不能替你写出爆款笔记（那是内容 Skill 的事），但它能让你：</p>
+      <ul style="margin-top:12px">
+        <li><span class="badge badge-must">核心</span> <strong>数据驱动选题</strong>——不用刷 App，直接拉取某个话题下的热帖和评论数据</li>
+        <li><span class="badge badge-content">实用</span> <strong>自动化发布</strong>——AI 生成的内容可以直接发布到小红书，不用手动复制粘贴</li>
+        <li><span class="badge badge-content">实用</span> <strong>竞品监控</strong>——追踪特定用户或话题，定期生成分析报告</li>
+        <li><span class="badge badge-easy">加分</span> <strong>跨平台联动</strong>——热点报告可以一键导出到飞书文档</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 核心架构 -->
+  <div class="section">
+    <div class="section-title">核心理念：MCP 协议 + Shell 脚本 = 万物可编程</div>
+    <div class="card">
+      <h3>架构设计哲学</h3>
+      <p>这个 Skill 的设计思路很"Unix 哲学"——每个脚本只做一件事，通过 MCP 协议统一调度。底层是一个叫 <code>xiaohongshu-mcp</code> 的 Go 服务（带 headless 浏览器），上层是一堆 Shell 脚本和 Python 工具。</p>
+    </div>
+    <div class="arch-diagram">
+┌──────────────────────────────────────────────────┐
+│  <span style="color:var(--accent)">AI 助手 / 用户命令行</span>                             │
+├──────────────────────────────────────────────────┤
+│                                                  │
+│  ┌──────────┐  ┌───────────┐  ┌──────────────┐  │
+│  │search.sh │  │comment.sh │  │track-topic.sh│  │
+│  └────┬─────┘  └─────┬─────┘  └──────┬───────┘  │
+│       │              │               │           │
+│       └──────────────┼───────────────┘           │
+│                      ▼                           │
+│            ┌─────────────────┐                   │
+│            │  <span style="color:var(--yellow)">mcp-call.sh</span>     │  ← 统一调度层       │
+│            │  JSON-RPC 2.0   │                   │
+│            └────────┬────────┘                   │
+│                     ▼                            │
+│          ┌──────────────────┐                    │
+│          │ <span style="color:var(--green)">xiaohongshu-mcp</span>  │  ← Go 服务          │
+│          │ Headless Browser │     (端口 18060)   │
+│          └────────┬─────────┘                    │
+│                   ▼                              │
+│            ┌──────────────┐                      │
+│            │  <span style="color:var(--orange)">小红书平台</span>    │                      │
+│            │  (Web API)   │                      │
+│            └──────────────┘                      │
+└──────────────────────────────────────────────────┘</div>
+    <div class="card">
+      <h3>核心数据流：feed_id + xsec_token</h3>
+      <p style="margin-bottom:12px;">小红书的 API 有个重要机制：大多数操作需要 <code>feed_id</code> + <code>xsec_token</code> 配对。这对值<strong>只能从搜索/推荐/用户主页的结果中获取</strong>，不能自己构造。这意味着你必须先搜索，再操作——这是小红书的反爬设计，也是这个 Skill 需要理解的关键。</p>
+      <div class="cmd-block">
+<span class="comment"># 典型工作流：搜索 → 拿 feed_id → 获取详情</span>
+search.sh "咖啡"
+  → 返回 feeds 数组，每个包含 <span class="highlight">id</span> + <span class="highlight">xsecToken</span>
+
+post-detail.sh <span class="highlight">"feed_id"</span> <span class="highlight">"xsec_token"</span>
+  → 返回完整笔记：正文、图片、评论列表
+
+<span class="comment"># 拿到评论里的 comment_id 后才能回复</span>
+comment.sh "feed_id" "xsec_token" "写得真好！"</div>
+    </div>
+  </div>
+
+  <!-- 工作流程 -->
+  <div class="section">
+    <div class="section-title">使用流程</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-dot">0</div>
+        <div class="flow-content">
+          <h4>环境准备</h4>
+          <p>安装 xiaohongshu-mcp 服务 + jq 工具，运行 install-check.sh 检查依赖</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <h4>启动 MCP 服务 + 登录</h4>
+          <p>start-mcp.sh 启动本地服务（默认端口 18060），首次需要用小红书 App 扫码登录</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <h4>搜索 / 浏览</h4>
+          <p>search.sh 搜关键词，recommend.sh 拉首页推荐，user-profile.sh 看用户主页</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <h4>深入分析</h4>
+          <p>post-detail.sh 获取完整正文+评论，track-topic.sh 批量追踪生成分析报告</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <h4>互动 / 发布</h4>
+          <p>comment.sh 评论，like/favorite 点赞收藏，publish_content 发布图文笔记</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关键功能模块 -->
+  <div class="section">
+    <div class="section-title">关键功能模块（可折叠）</div>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">点击展开每个模块的详细说明、参数和命令示例 👇</p>
+
+    <div class="pattern-list">
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">1</div>
+          <div class="pattern-name">🔍 内容搜索 — search_feeds</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>支持关键词搜索 + 多维度筛选（排序、类型、时间范围、浏览状态、地理位置）。</p>
+          <div class="cmd-block">
+<span class="comment"># 基础搜索</span>
+search.sh "咖啡"
+
+<span class="comment"># 带筛选条件的高级搜索</span>
+mcp-call.sh search_feeds '{
+  "keyword": "咖啡",
+  "filters": {
+    "sort_by": "最多点赞",
+    "note_type": "图文",
+    "publish_time": "一周内"
+  }
+}'</div>
+          <table class="tool-table">
+            <tr><th>筛选项</th><th>可选值</th></tr>
+            <tr><td>sort_by</td><td>综合 | 最新 | 最多点赞 | 最多评论 | 最多收藏</td></tr>
+            <tr><td>note_type</td><td>不限 | 视频 | 图文</td></tr>
+            <tr><td>publish_time</td><td>不限 | 一天内 | 一周内 | 半年内</td></tr>
+            <tr><td>search_scope</td><td>不限 | 已看过 | 未看过 | 已关注</td></tr>
+            <tr><td>location</td><td>不限 | 同城 | 附近</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">2</div>
+          <div class="pattern-name">📖 帖子详情 — get_feed_detail</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>获取完整笔记内容：正文、图片列表、评论列表。支持滚动加载全部评论、展开二级回复。</p>
+          <div class="cmd-block">
+<span class="comment"># 基础用法</span>
+post-detail.sh "feed_id" "xsec_token"
+
+<span class="comment"># 加载全部评论（含二级回复）</span>
+mcp-call.sh get_feed_detail '{
+  "feed_id": "...",
+  "xsec_token": "...",
+  "load_all_comments": true,
+  "limit": 50,
+  "click_more_replies": true,
+  "scroll_speed": "fast"
+}'</div>
+          <p style="margin-top:12px; color:var(--yellow); font-size:13px;">⚠️ load_all_comments 会模拟浏览器滚动加载，数据量大时较慢。建议先用 false 预览前 10 条。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">3</div>
+          <div class="pattern-name">🔥 热点追踪 — track-topic</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>这是整个 Skill 最有价值的功能模块。一行命令：搜索 → 批量拉取帖子详情 → 分析评论 → 生成 Markdown 报告。还能一键导出到飞书。</p>
+          <div class="cmd-block">
+<span class="comment"># 追踪 DeepSeek 话题，拉取 5 篇热帖</span>
+track-topic.sh "DeepSeek" --limit 5
+
+<span class="comment"># 输出报告到文件</span>
+track-topic.sh "春节旅游" --limit 10 --output report.md
+
+<span class="comment"># 同时导出到飞书文档</span>
+track-topic.sh "iPhone 16" --limit 5 --feishu</div>
+          <p style="margin-top:12px;">报告包含：<strong>概览统计</strong>（总帖子/点赞/评论数）→ <strong>热帖详情</strong>（作者、正文、互动数据、热门评论）→ <strong>评论关键词</strong> → <strong>趋势分析</strong>（热度指数、互动活跃度）</p>
+          <p style="margin-top:8px; color:var(--text2); font-size:13px;">底层由 track-topic.py（313行 Python）实现，调用 mcp-call.sh 完成数据采集。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">4</div>
+          <div class="pattern-name">💬 互动操作 — 评论/点赞/收藏</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>支持完整的互动链路：发表评论、回复评论、点赞/取消点赞、收藏/取消收藏。</p>
+          <div class="cmd-block">
+<span class="comment"># 发表评论</span>
+comment.sh "feed_id" "xsec_token" "写得真好！"
+
+<span class="comment"># 回复特定评论（需要 comment_id + user_id）</span>
+mcp-call.sh reply_comment_in_feed '{
+  "feed_id": "...",
+  "xsec_token": "...",
+  "content": "谢谢分享！",
+  "comment_id": "...",
+  "user_id": "..."
+}'
+
+<span class="comment"># 点赞（取消：加 "unlike": true）</span>
+mcp-call.sh like_feed '{"feed_id":"...","xsec_token":"..."}'
+
+<span class="comment"># 收藏</span>
+mcp-call.sh favorite_feed '{"feed_id":"...","xsec_token":"..."}'</div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">5</div>
+          <div class="pattern-name">📝 内容发布 — 图文 & 视频</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>支持发布图文笔记和视频笔记，可带话题标签，支持定时发布。</p>
+          <div class="cmd-block">
+<span class="comment"># 发布图文笔记</span>
+mcp-call.sh publish_content '{
+  "title": "今日咖啡推荐",
+  "content": "这家店的手冲超绝...",
+  "images": ["/path/to/img1.jpg", "/path/to/img2.jpg"],
+  "tags": ["咖啡", "探店"]
+}'
+
+<span class="comment"># 定时发布（1小时~14天内）</span>
+mcp-call.sh publish_content '{
+  "title": "...",
+  "content": "...",
+  "images": ["..."],
+  "schedule_at": "2026-03-31T10:00:00+08:00"
+}'
+
+<span class="comment"># 发布视频笔记</span>
+mcp-call.sh publish_with_video '{
+  "title": "Vlog",
+  "content": "今天的记录",
+  "video": "/path/to/video.mp4"
+}'</div>
+          <p style="margin-top:12px; color:var(--yellow); font-size:13px;">⚠️ 限制：标题 ≤ 20字符，正文 ≤ 1000字符，日发布 ≤ 50条，图片至少1张。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">6</div>
+          <div class="pattern-name">🖼️ 长图导出 — export-long-image</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>把帖子内容（标题+正文+图片）拼接成白底黑字的 JPG 长图，类似小红书"分享截图"功能。支持自定义宽度和画质。</p>
+          <div class="cmd-block">
+<span class="comment"># 从 JSON 文件导出长图</span>
+python3 export-long-image.py --posts-file posts.json -o output.jpg
+
+<span class="comment"># 自定义宽度和画质</span>
+python3 export-long-image.py --posts-file posts.json \
+  --width 1080 --quality 95 -o hd-output.jpg</div>
+          <p style="margin-top:12px;">底层用 Pillow 实现中文排版，自动查找系统中文字体（STHeiti、Hiragino、NotoSansCJK），支持自动换行。依赖 Python 3.10+ 和 Pillow。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">7</div>
+          <div class="pattern-name">👤 用户分析 — user_profile</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>获取任意用户的主页信息和笔记列表，用于竞品分析和达人研究。</p>
+          <div class="cmd-block">
+<span class="comment"># 获取用户主页（user_id 和 xsec_token 从搜索结果中提取）</span>
+user-profile.sh "user_id" "xsec_token"</div>
+          <p style="margin-top:12px;">返回用户基本信息和该用户发布的笔记列表。可以配合 search_feeds 批量分析某个领域的头部创作者。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">8</div>
+          <div class="pattern-name">🔐 登录与会话管理</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>基于 Cookies 的会话管理，支持多种 Cookies 来源路径和自动同步。</p>
+          <div class="cmd-block">
+<span class="comment"># 启动服务</span>
+start-mcp.sh
+
+<span class="comment"># 检查登录状态</span>
+status.sh
+
+<span class="comment"># 首次登录：获取二维码</span>
+mcp-call.sh get_login_qrcode  <span class="comment"># 返回 Base64 PNG</span>
+
+<span class="comment"># 重置登录</span>
+mcp-call.sh delete_cookies
+stop-mcp.sh && start-mcp.sh</div>
+          <p style="margin-top:12px;">Cookies 有效期约 30 天，存储在 <code>/tmp/cookies.json</code>。支持从 <code>~/cookies.json</code>、<code>~/.xiaohongshu/cookies.json</code> 或 <code>XHS_COOKIES_SRC</code> 环境变量自动同步。Linux 无桌面环境下会自动启动 Xvfb 虚拟显示。</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 完整 MCP 工具表 -->
+  <div class="section">
+    <div class="section-title">MCP 工具一览表</div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tool-table">
+        <tr><th>工具名称</th><th>功能</th><th>关键参数</th></tr>
+        <tr><td><code>search_feeds</code></td><td>搜索笔记</td><td>keyword, filters(sort_by/note_type/publish_time)</td></tr>
+        <tr><td><code>list_feeds</code></td><td>首页推荐</td><td>无</td></tr>
+        <tr><td><code>get_feed_detail</code></td><td>帖子详情+评论</td><td>feed_id, xsec_token, load_all_comments</td></tr>
+        <tr><td><code>post_comment_to_feed</code></td><td>发表评论</td><td>feed_id, xsec_token, content</td></tr>
+        <tr><td><code>reply_comment_in_feed</code></td><td>回复评论</td><td>feed_id, xsec_token, content, comment_id, user_id</td></tr>
+        <tr><td><code>user_profile</code></td><td>用户主页</td><td>user_id, xsec_token</td></tr>
+        <tr><td><code>like_feed</code></td><td>点赞/取消</td><td>feed_id, xsec_token, unlike?</td></tr>
+        <tr><td><code>favorite_feed</code></td><td>收藏/取消</td><td>feed_id, xsec_token, unfavorite?</td></tr>
+        <tr><td><code>publish_content</code></td><td>发布图文</td><td>title, content, images, tags, schedule_at</td></tr>
+        <tr><td><code>publish_with_video</code></td><td>发布视频</td><td>title, content, video</td></tr>
+        <tr><td><code>check_login_status</code></td><td>检查登录</td><td>无</td></tr>
+        <tr><td><code>get_login_qrcode</code></td><td>登录二维码</td><td>无</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 参考资料 -->
+  <div class="section">
+    <div class="section-title">参考资料</div>
+    <a href="https://github.com/xpzouying/xiaohongshu-mcp" target="_blank" class="ref-link">
+      <div class="ref-title">📦 xiaohongshu-mcp — GitHub 仓库</div>
+      <div class="ref-desc">底层 MCP 服务的开源项目，Go 语言实现，带 headless Chromium 浏览器</div>
+    </a>
+    <a href="https://modelcontextprotocol.io/" target="_blank" class="ref-link">
+      <div class="ref-title">📘 Model Context Protocol (MCP) 规范</div>
+      <div class="ref-desc">Anthropic 提出的协议标准，定义 AI 助手如何与外部工具交互</div>
+    </a>
+    <a href="#" class="ref-link" onclick="event.preventDefault(); document.getElementById('sourceModal').classList.add('active');">
+      <div class="ref-title">📄 SKILL.md 原文（5.6 KB）</div>
+      <div class="ref-desc">包含完整的工具参数说明、数据流文档和脚本使用手册</div>
+    </a>
+    <a href="#" class="ref-link" onclick="event.preventDefault()">
+      <div class="ref-title">📜 脚本清单（15 个文件）</div>
+      <div class="ref-desc">13 个 Shell 脚本（搜索/评论/发布/登录等）+ 2 个 Python 工具（热点追踪/长图导出）</div>
+    </a>
+  </div>
+
+  <!-- 辣评 -->
+  <div class="section">
+    <div class="section-title">Buddy 辣评 🌶️</div>
+    <div class="verdict-box" style="text-align:left; border-color: var(--yellow);">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div class="stars">⭐⭐⭐⭐</div>
+        <h3 style="color:var(--yellow)">值得关注，但有门槛</h3>
+      </div>
+
+      <div class="card" style="background:rgba(74,222,128,0.05); border-color:rgba(74,222,128,0.3); margin-bottom:16px;">
+        <h3 style="color:var(--green)">👍 优点</h3>
+        <ul>
+          <li><strong>工程化程度在 Skill 市场里属于顶流。</strong>15 个脚本文件，覆盖搜索、详情、评论、发布、用户分析、热点追踪、长图导出——几乎把小红书的主要操作都 API 化了。不是空壳 Prompt，而是有真正可跑的代码。</li>
+          <li><strong>架构设计干净。</strong>mcp-call.sh 统一调度层 + 各功能脚本分工明确，很"Unix 味"。JSON-RPC 协议 + Session ID 管理，安全性考虑到位（shell 注入防护、cookies 权限 600）。</li>
+          <li><strong>track-topic 是杀手级功能。</strong>一行命令完成"搜索→拉详情→分析评论→生成报告"的全链路，还能导出飞书。对内容运营来说，这个功能单独就值回票价。</li>
+          <li><strong>Linux 服务器适配细致。</strong>自动检测桌面环境、自动启动 Xvfb、自动选择可用 display 号、清理僵尸锁文件……这些细节说明作者真的在生产环境跑过。</li>
+          <li><strong>SKILL.md 文档质量高。</strong>数据流图、参数说明、脚本对照表一应俱全，中文文档对中文工具做到了本土化。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:rgba(239,68,68,0.05); border-color:rgba(239,68,68,0.3); margin-bottom:16px;">
+        <h3 style="color:#ef4444">👎 缺点</h3>
+        <ul>
+          <li><strong>安装门槛高，非技术用户劝退。</strong>需要安装 Go 编写的 xiaohongshu-mcp 二进制、jq 命令行工具、Python 3.10+、Pillow……这不是"点一下就能用"的东西。对于小红书的主要用户群体（内容创作者、运营），这个技术门槛过高。</li>
+          <li><strong>登录机制脆弱。</strong>基于 Cookies 的登录有效期只有 30 天，过期需要重新扫码。这意味着你不能真正实现"无人值守"的自动化——每个月至少要人工介入一次。而且同一账号不能多客户端同时操作，限制了团队协作。</li>
+          <li><strong>发布限制多，自动化空间有限。</strong>标题 ≤ 20 字符、正文 ≤ 1000 字符、日发布 ≤ 50 条——这些限制不是 Skill 的问题，是小红书平台的限制。但 Skill 没有提供任何"规避策略"或"最佳实践"建议，用户可能踩到频率限制被封号。</li>
+          <li><strong>track-topic.py 的"分析"太粗糙。</strong>号称"评论关键词分析"和"趋势分析"，实际上分析部分就硬编码了几行"用户对该话题的关注度较高"、"评论区互动活跃"。没有真正的 NLP 分析，也没有调用 LLM 做智能总结。这是最大的遗憾。</li>
+          <li><strong>Windows 兼容性为零。</strong>所有脚本都是 .sh（Bash），依赖 curl/jq/nohup 等 Unix 工具。Windows 用户需要 WSL 才能跑，但文档里没提这回事。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:rgba(251,191,36,0.05); border-color:rgba(251,191,36,0.3);">
+        <h3 style="color:var(--yellow)">💡 谁最该用？</h3>
+        <p style="margin-top:8px;">
+          <strong>有技术背景的内容运营</strong>——如果你同时懂一点命令行，又需要做小红书竞品分析和热点追踪，这个 Skill 能让你效率翻倍。把 track-topic 设成定时任务，每天自动拉取某个关键词的热帖报告。<br><br>
+          <strong>小红书工具开发者</strong>——这个 Skill 的架构设计是很好的参考。MCP 协议 + Shell 脚本的分层思路、JSON-RPC 的会话管理、Cookies 同步机制，都值得借鉴。<br><br>
+          <strong>纯内容创作者</strong>——先别碰。等有人基于这个 Skill 做出"一键操作"的 GUI 工具再说。或者，让你的 AI 助手帮你调用——这才是它作为 Skill 的正确打开方式：<strong>你不需要自己跑命令，让 AI 替你跑</strong>。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 互动区 -->
+  <div class="interact-section">
+    <h3>📝 学习心得 & 互动</h3>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">看完这个 Skill，有什么想法？可以记录在这里（保存在本地）</p>
+    <textarea id="notes" placeholder="写点学习心得...&#10;&#10;比如：我的小红书运营能用上哪些功能？track-topic 追踪哪些话题最有价值？"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveNotes()">💾 保存心得</button>
+      <button class="btn btn-outline" onclick="clearNotes()">清空</button>
+    </div>
+    <div id="save-status" style="margin-top:8px; font-size:13px; color:var(--green); display:none;">✅ 已保存到本地</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Skill 日报 — 每天拆解一个 AI 技能 | Powered by Buddy ⚡</p>
+  <p style="margin-top:4px;">往期回顾：<a href="2026-03-28-humanizer.html" style="color:var(--blue);">#001 Humanizer</a> · <a href="2026-03-30-content-factory.html" style="color:var(--blue);">#002 Content Factory</a></p>
+</div>
+
+<script>
+function saveNotes() {
+  const notes = document.getElementById('notes').value;
+  localStorage.setItem('skill-daily-003-notes', notes);
+  const status = document.getElementById('save-status');
+  status.style.display = 'block';
+  setTimeout(() => status.style.display = 'none', 2000);
+}
+function clearNotes() {
+  document.getElementById('notes').value = '';
+  localStorage.removeItem('skill-daily-003-notes');
+}
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('skill-daily-003-notes');
+  if (saved) document.getElementById('notes').value = saved;
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('sourceModal').classList.remove('active');
+});
+</script>
+
+<!-- Source Modal -->
+<div class="modal-overlay" id="sourceModal" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📄 SKILL.md 原文 — 小红书 MCP Skill</h3>
+      <button class="modal-close" onclick="document.getElementById('sourceModal').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body">---
+name: xiaohongshu
+description: "小红书（RedNote）内容工具。使用场景：搜索小红书笔记并获取详情、获取首页推荐列表、获取帖子详情（正文、图片、互动数据、评论）、发表评论/回复评论、获取用户主页和笔记列表、点赞、收藏帖子、发布图文或视频笔记、热点话题跟踪与分析报告、帖子导出为长图。"
+description_zh: "小红书内容搜索、发布、互动与数据分析"
+description_en: "Xiaohongshu content search, publish &amp; analytics"
+---
+
+# 小红书 MCP Skill
+
+基于 xiaohongshu-mcp 封装的 shell 脚本工具集。
+
+## 前置条件
+
+cd scripts/
+./install-check.sh    # 检查依赖（xiaohongshu-mcp、jq、python3）
+./start-mcp.sh        # 启动 MCP 服务（默认端口 18060）
+./status.sh           # 确认已登录
+
+未登录时需扫码：mcp-call.sh get_login_qrcode 获取二维码，用小红书 App 扫码。
+
+## 核心数据流
+
+重要：大多数操作需要 feed_id + xsec_token 配对。
+这两个值从搜索/推荐/用户主页结果中获取，不可自行构造。
+
+search_feeds / list_feeds / user_profile
+        │
+        ▼
+  返回 feeds 数组，每个 feed 包含:
+  ├── id          → 用作 feed_id
+  ├── xsecToken   → 用作 xsec_token
+  └── noteCard    → 标题、作者、封面、互动数据
+        │
+        ▼
+  get_feed_detail(feed_id, xsec_token)
+        │
+        ▼
+  返回完整笔记: 正文、图片列表、评论列表
+
+## 脚本参考
+
+| 脚本 | 用途 | 参数 |
+|------|------|------|
+| search.sh | 搜索笔记 | 关键词 |
+| recommend.sh | 首页推荐 | 无 |
+| post-detail.sh | 帖子详情+评论 | feed_id, xsec_token |
+| comment.sh | 发表评论 | feed_id, xsec_token, 内容 |
+| user-profile.sh | 用户主页+笔记 | user_id, xsec_token |
+| track-topic.sh | 热点分析报告 | 话题 [--limit N] [--output] [--feishu] |
+| export-long-image.sh | 帖子导出长图 | --posts-file json -o output.jpg |
+| mcp-call.sh | 通用 MCP 调用 | tool_name [json_args] |
+| start-mcp.sh | 启动服务 | [--headless=false] [--port=N] |
+| stop-mcp.sh | 停止服务 | 无 |
+| status.sh | 检查登录 | 无 |
+| install-check.sh | 检查依赖 | 无 |
+
+## MCP 工具
+
+search_feeds: 搜索笔记（支持筛选）
+list_feeds: 首页推荐
+get_feed_detail: 帖子详情（正文+图片+评论）
+post_comment_to_feed: 发表评论
+reply_comment_in_feed: 回复评论
+user_profile: 用户主页
+like_feed: 点赞/取消
+favorite_feed: 收藏/取消
+publish_content: 发布图文（支持定时）
+publish_with_video: 发布视频
+check_login_status: 检查登录
+get_login_qrcode: 获取登录二维码
+delete_cookies: 删除 cookies
+
+## 注意事项
+
+- Cookies 有效期约 30 天，过期需重新扫码
+- 首次启动会下载 headless 浏览器（~150MB）
+- 同一账号避免多客户端同时操作
+- 发布限制：标题≤20字符，正文≤1000字符，日发布≤50条
+- Linux 服务器需安装 xvfb（脚本自动管理）
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
