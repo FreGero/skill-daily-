@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill 日报 #004 — Content Repurposer 一稿多发内容复用器</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card: #1a1a2e;
+    --card2: #16213e;
+    --accent: #e94560;
+    --accent2: #0f3460;
+    --text: #e0e0e0;
+    --text2: #a0a0a0;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --orange: #fb923c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 60px 24px 40px;
+    text-align: center;
+    border-bottom: 3px solid var(--accent);
+  }
+  .hero .issue { color: var(--accent); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+  .hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  .hero .subtitle { color: var(--text2); font-size: 18px; margin-bottom: 20px; }
+  .hero .tags { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .hero .tag { background: rgba(233,69,96,0.2); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+  .meta-bar {
+    display: flex; justify-content: center; gap: 32px; padding: 16px; background: var(--card);
+    font-size: 14px; color: var(--text2); border-bottom: 1px solid #333; flex-wrap: wrap;
+  }
+  .meta-bar span { display: flex; align-items: center; gap: 6px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  .action-bar { display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(15,52,96,0.3); flex-wrap: wrap; }
+  .action-btn {
+    padding: 8px 20px; border-radius: 8px; border: 1px solid var(--accent);
+    background: transparent; color: var(--accent); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block;
+  }
+  .action-btn:hover { background: var(--accent); color: #fff; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--card); border: 1px solid #444; border-radius: 16px;
+    width: 90%; max-width: 900px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; border-bottom: 1px solid #333;
+  }
+  .modal-header h3 { font-size: 18px; }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 28px; cursor: pointer; }
+  .modal-close:hover { color: var(--accent); }
+  .modal-body {
+    padding: 24px; overflow-y: auto; font-size: 14px; line-height: 1.8; color: var(--text2);
+    font-family: 'Consolas', 'Monaco', monospace; white-space: pre-wrap; word-break: break-word;
+  }
+
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 16px;
+    padding-left: 16px; border-left: 4px solid var(--accent);
+  }
+
+  .card {
+    background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    border: 1px solid #2a2a4a;
+  }
+  .card h3 { color: var(--accent); font-size: 18px; margin-bottom: 12px; }
+  .card p, .card li { color: var(--text2); font-size: 15px; line-height: 1.8; }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(233,69,96,0.1), rgba(15,52,96,0.2));
+    border: 1px solid var(--accent);
+    border-radius: 12px; padding: 24px; margin-bottom: 16px;
+  }
+  .highlight-box h3 { color: #fff; }
+
+  /* Data panel */
+  .data-panel {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;
+  }
+  @media (max-width: 600px) { .data-panel { grid-template-columns: repeat(2, 1fr); } }
+  .data-cell {
+    background: var(--card); border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .data-cell .num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .data-cell .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* Platform cards */
+  .platform-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  @media (max-width: 600px) { .platform-grid { grid-template-columns: 1fr; } }
+  .platform-card {
+    background: var(--card); border-radius: 12px; padding: 20px;
+    border: 1px solid #2a2a4a; transition: all 0.2s;
+  }
+  .platform-card:hover { border-color: var(--blue); }
+  .platform-card .platform-icon { font-size: 28px; margin-bottom: 8px; }
+  .platform-card h4 { font-size: 16px; color: var(--blue); margin-bottom: 8px; }
+  .platform-card .specs { font-size: 13px; color: var(--text2); }
+  .platform-card .specs span { display: inline-block; background: rgba(96,165,250,0.1); color: var(--blue); padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; font-size: 12px; }
+
+  /* Flow diagram */
+  .flow-diagram {
+    display: flex; align-items: center; justify-content: center; gap: 0; margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .flow-node {
+    background: var(--card2); border: 2px solid var(--blue); border-radius: 12px;
+    padding: 12px 16px; text-align: center; min-width: 100px;
+  }
+  .flow-node .icon { font-size: 24px; }
+  .flow-node .name { font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .flow-arrow-h { color: var(--accent); font-size: 24px; padding: 0 4px; }
+
+  /* Pattern items (collapsible) */
+  .pattern-list { counter-reset: pattern; }
+  .pattern-item {
+    background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 12px;
+    border: 1px solid #2a2a4a; cursor: pointer; transition: all 0.2s;
+  }
+  .pattern-item:hover { border-color: var(--accent); }
+  .pattern-header { display: flex; align-items: center; gap: 12px; }
+  .pattern-num {
+    background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pattern-name { font-size: 16px; font-weight: 600; flex: 1; }
+  .pattern-toggle { color: var(--text2); font-size: 20px; transition: transform 0.2s; }
+  .pattern-body { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #333; }
+  .pattern-item.open .pattern-body { display: block; }
+  .pattern-item.open .pattern-toggle { transform: rotate(180deg); }
+
+  /* Code block */
+  .code-block {
+    background: #0d1117; border: 1px solid #333; border-radius: 8px;
+    padding: 16px; font-family: 'Consolas','Monaco',monospace; font-size: 13px;
+    color: var(--green); overflow-x: auto; margin: 12px 0; line-height: 1.6;
+  }
+  .code-block .comment { color: #6a737d; }
+  .code-block .cmd { color: var(--blue); }
+  .code-block .file { color: var(--yellow); }
+
+  /* Config table */
+  .config-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .config-table th { background: rgba(233,69,96,0.15); color: var(--accent); text-align: left; padding: 10px 12px; font-weight: 600; }
+  .config-table td { padding: 10px 12px; border-bottom: 1px solid #2a2a4a; color: var(--text2); }
+  .config-table tr:hover td { background: rgba(96,165,250,0.05); }
+
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step { display: flex; gap: 16px; padding: 16px 0; }
+  .flow-dot {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+    background: var(--accent2); color: var(--blue); border: 2px solid var(--blue);
+  }
+  .flow-content h4 { font-size: 16px; margin-bottom: 4px; }
+  .flow-content p { font-size: 14px; color: var(--text2); }
+  .flow-arrow { text-align: center; color: var(--text2); font-size: 20px; margin: -8px 0; padding-left: 10px; }
+
+  .ref-link {
+    display: block; background: var(--card2); border-radius: 8px; padding: 14px 18px;
+    margin-bottom: 8px; text-decoration: none; color: var(--text);
+    border: 1px solid #2a2a4a; transition: all 0.2s;
+  }
+  .ref-link:hover { border-color: var(--blue); }
+  .ref-link .ref-title { font-weight: 600; }
+  .ref-link .ref-desc { font-size: 13px; color: var(--text2); }
+
+  .verdict-box {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    border-radius: 16px; padding: 32px; text-align: center;
+  }
+  .stars { font-size: 28px; margin-bottom: 12px; }
+
+  .interact-section { margin-top: 40px; padding: 32px; background: var(--card); border-radius: 16px; border: 1px solid #2a2a4a; }
+  .interact-section h3 { color: var(--accent); margin-bottom: 16px; }
+  .interact-section textarea {
+    width: 100%; height: 100px; background: #0f0f0f; color: var(--text);
+    border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 14px;
+    resize: vertical; font-family: inherit;
+  }
+  .interact-section textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px; border-radius: 8px; border: none; font-size: 14px;
+    cursor: pointer; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #d63851; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid #555; }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .footer { text-align: center; padding: 40px 16px; color: var(--text2); font-size: 13px; border-top: 1px solid #222; margin-top: 40px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .badge-easy { background: rgba(74,222,128,0.2); color: var(--green); }
+  .badge-content { background: rgba(251,191,36,0.2); color: var(--yellow); }
+  .badge-must { background: rgba(233,69,96,0.2); color: var(--accent); }
+
+  /* Demo output */
+  .demo-output {
+    background: #0d1117; border: 1px solid #333; border-radius: 8px;
+    padding: 16px; font-size: 14px; color: var(--text2); line-height: 1.7; margin: 12px 0;
+  }
+  .demo-output .platform-label { color: var(--accent); font-weight: 700; font-size: 12px; letter-spacing: 1px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="issue">SKILL 日报 · 第 004 期 · 2026.03.31</div>
+  <h1>♻️ Content Repurposer</h1>
+  <div class="subtitle">一稿多发 — 写一次，发五个平台</div>
+  <div class="tags">
+    <span class="tag">内容创作</span>
+    <span class="tag">效率工具</span>
+    <span class="tag">多平台分发</span>
+    <span class="tag">声音一致性</span>
+    <span class="tag">v1.1.0</span>
+  </div>
+</div>
+
+<div class="meta-bar">
+  <span>📦 SKILL.md 6.5 KB</span>
+  <span>📜 7 个 Shell 脚本</span>
+  <span>⚙️ JSON 配置驱动</span>
+  <span>🏷️ 内容创作方向</span>
+</div>
+
+<div class="action-bar">
+  <button class="action-btn" onclick="document.getElementById('sourceModal').classList.add('active')">📄 查看 SKILL.md 原文</button>
+  <a href="index.html" class="action-btn">🏠 返回首页</a>
+</div>
+
+<div class="container">
+
+  <!-- 数据面板 -->
+  <div class="data-panel">
+    <div class="data-cell"><div class="num">5</div><div class="label">覆盖平台</div></div>
+    <div class="data-cell"><div class="num">7</div><div class="label">Shell 脚本</div></div>
+    <div class="data-cell"><div class="num">30s</div><div class="label">一键生成</div></div>
+    <div class="data-cell"><div class="num">110</div><div class="label">配置项</div></div>
+  </div>
+
+  <!-- 一句话概述 -->
+  <div class="section">
+    <div class="section-title">这个 Skill 是什么？</div>
+    <div class="highlight-box">
+      <h3>一句话：一篇博客进去，五个平台的内容出来，声音一致，直接能发。</h3>
+      <p style="margin-top:12px; color:var(--text2)">
+        Content Repurposer 解决内容创作者的"<strong>分发地狱</strong>"——你辛苦写了一篇长文，然后要花4小时手动改写成 Twitter 线程、LinkedIn 帖子、邮件通讯、Instagram 标题和 Threads 帖子。这个 Skill 用一条命令搞定一切，而且保持你的个人风格不走样。
+      </p>
+    </div>
+  </div>
+
+  <!-- 为什么值得学 -->
+  <div class="section">
+    <div class="section-title">为什么值得学？</div>
+    <div class="card">
+      <p>在内容为王的时代，<strong>创作不是瓶颈，分发才是</strong>。写一篇好文章需要2-3小时，但把它适配到5个平台又要4+小时。Content Repurposer 把后半段自动化了。</p>
+      <ul style="margin-top:12px">
+        <li><span class="badge badge-must">刚需</span> 个人博主、自媒体人——一篇文章变一周的社交内容</li>
+        <li><span class="badge badge-content">适用</span> 出海营销团队——同时管理 Twitter/LinkedIn/Instagram 多平台</li>
+        <li><span class="badge badge-content">适用</span> 播客主、课程创作者——把文字稿/讲义变成推广素材</li>
+        <li><span class="badge badge-easy">学习价值</span> 即使不用这个工具，它的平台适配规则本身就是一份社交媒体运营指南</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 核心理念 -->
+  <div class="section">
+    <div class="section-title">核心理念：Create Once, Publish Everywhere</div>
+    <div class="card">
+      <h3>内容复用的三个死穴（以及解法）</h3>
+      <table class="config-table">
+        <tr><th>死穴</th><th>传统做法</th><th>Repurposer 做法</th></tr>
+        <tr><td>太慢</td><td>手动改写，每个平台30-45分钟</td><td>一条命令，30秒全部生成</td></tr>
+        <tr><td>不像人</td><td>模板填充，读起来像机器</td><td>Voice Profile 保持你的人格</td></tr>
+        <tr><td>不适配</td><td>一稿通发，忽略平台差异</td><td>每个平台独立优化策略</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>声音一致性引擎（Voice Profile）</h3>
+      <p>这是 Repurposer 区别于简单模板工具的关键。你可以定义：</p>
+      <div class="code-block">
+{
+  <span class="file">"tone"</span>: "professional-casual",
+  <span class="file">"personality"</span>: ["direct", "insightful", "practical"],
+  <span class="file">"avoid"</span>: ["corporate jargon", "excessive hype", "clickbait"],
+  <span class="file">"signature_phrases"</span>: ["Here's the thing:", "The reality:"],
+  <span class="file">"emoji_level"</span>: "moderate",
+  <span class="file">"first_person"</span>: true
+}
+      </div>
+      <p style="margin-top:8px;">不管是 Twitter 的短平快还是 LinkedIn 的商务风，都从这个 Profile 出发适配——你在所有平台上听起来都像"你"。</p>
+    </div>
+  </div>
+
+  <!-- 架构总览 -->
+  <div class="section">
+    <div class="section-title">工作流程</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <h4>读取长文内容</h4>
+          <p>支持 Markdown、TXT、HTML、URL，自动抓取和解析</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <h4>提取核心要素</h4>
+          <p>识别主论点、关键观点、金句引用、数据统计</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <h4>平台适配生成</h4>
+          <p>根据每个平台的格式规则、字数限制、Emoji 策略独立生成</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <h4>声音校准</h4>
+          <p>用 Voice Profile 确保每个版本的语气、人格、用词一致</p>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="flow-dot">5</div>
+        <div class="flow-content">
+          <h4>输出到 output/ 目录</h4>
+          <p>按日期和来源分类存储，最高优先级的版本自动复制到剪贴板</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block" style="margin-top: 16px;">
+<span class="comment"># 核心使用命令</span>
+<span class="cmd">repurpose.sh</span> <span class="file">blog-post.md</span>
+<span class="comment"># 输出结构：</span>
+output/2026-03-31-blog-post/
+├── <span class="file">twitter-thread.txt</span>    <span class="comment"># 7推线程</span>
+├── <span class="file">linkedin-post.txt</span>     <span class="comment"># 1650字专业帖</span>
+├── <span class="file">newsletter.md</span>         <span class="comment"># 3段邮件通讯</span>
+├── <span class="file">instagram-caption.txt</span> <span class="comment"># 220字+标签</span>
+└── <span class="file">threads-post.txt</span>      <span class="comment"># 480字轻松帖</span>
+    </div>
+  </div>
+
+  <!-- 5大平台详解（可折叠） -->
+  <div class="section">
+    <div class="section-title">5 大平台适配策略（可折叠）</div>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">点击展开每个平台的适配规则和输出示例 👇</p>
+
+    <div class="pattern-list">
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num" style="background:var(--blue)">𝕏</div>
+          <div class="pattern-name">Twitter / X 线程</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <table class="config-table">
+            <tr><td>线程长度</td><td>3-10 条推文（可配置）</td></tr>
+            <tr><td>每条限制</td><td>280 字符</td></tr>
+            <tr><td>开头策略</td><td>bold_claim / question / stat / story_tease</td></tr>
+            <tr><td>结构</td><td>Hook → 关键点 → 洞察 → CTA</td></tr>
+            <tr><td>标签</td><td>仅末条，最多2个</td></tr>
+          </table>
+          <p style="margin-top:12px;"><strong>最适合：</strong>犀利观点、框架方法论、步骤指南</p>
+          <div class="demo-output">
+            <div class="platform-label">📤 示例输出</div>
+I'm building a skill to repurpose content. Instead of just doing one thing, it can take a blog post and turn it into content for 5 different platforms.
+---
+1/ The problem: You spend hours writing a great article. But then you have to manually rewrite it for Twitter, LinkedIn, etc. It's slow and the voice is inconsistent.
+---
+2/ The solution: An agent that does it for you. One command takes your source content and generates platform-optimized versions in seconds.
+---
+3/ What's the most painful part of content creation for you? #ContentCreation #AI
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num" style="background:#0077b5">in</div>
+          <div class="pattern-name">LinkedIn 商务帖</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <table class="config-table">
+            <tr><td>长度</td><td>1300-2000 字符（"see more" 甜蜜点）</td></tr>
+            <tr><td>开头策略</td><td>personal_insight / professional_story / bold_statement</td></tr>
+            <tr><td>正文规则</td><td>不放链接！短段落+要点列表，B2B视角</td></tr>
+            <tr><td>结构</td><td>Hook → 故事/背景 → 价值/教训 → CTA</td></tr>
+            <tr><td>标签</td><td>末尾最多5个</td></tr>
+          </table>
+          <p style="margin-top:12px;"><strong>最适合：</strong>B2B洞察、职场经验、思想领导力</p>
+          <div class="demo-output">
+            <div class="platform-label">📤 示例输出</div>
+The biggest bottleneck in content isn't creation, it's distribution.
+
+You can spend 4 hours on a killer blog post, but that's just the start. Then comes the 'repurpose grind': manually reformatting for Twitter, LinkedIn, your newsletter...
+
+Here's how it works:
+→ Feed it one piece of long-form content
+→ The agent analyzes your core message and voice
+→ It generates optimized snippets for every platform
+
+What's your biggest time-sink when it comes to content?
+
+#ContentMarketing #AI #Automation #Productivity #Marketing
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num" style="background:var(--purple)">📧</div>
+          <div class="pattern-name">Email Newsletter</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <table class="config-table">
+            <tr><td>长度</td><td>~400 词/段落</td></tr>
+            <tr><td>格式</td><td>Markdown，scannable风格</td></tr>
+            <tr><td>特色</td><td>自动生成3个备选主题行</td></tr>
+            <tr><td>结构</td><td>Subject Lines → 正文（标题+要点+段落）→ CTA</td></tr>
+          </table>
+          <p style="margin-top:12px;"><strong>最适合：</strong>深度分享、策划洞察、个人更新</p>
+          <div class="demo-output">
+            <div class="platform-label">📤 示例输出</div>
+Subject: Stop reformatting, start publishing
+Subject: Create once, publish everywhere
+Subject: Your new content workflow
+---
+## The Repurpose Grind Is Killing Your Reach
+
+You spend hours crafting the perfect blog post...
+Then it gets lost in the content void.
+
+### A Smarter Way to Distribute
+Take one piece of content → get a week's worth of posts.
+Check out the full post: [your link]
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)">📸</div>
+          <div class="pattern-name">Instagram Caption</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <table class="config-table">
+            <tr><td>长度</td><td>150-300 字符（"...more"截断前）</td></tr>
+            <tr><td>Emoji密度</td><td>高（可配置 low/moderate/high）</td></tr>
+            <tr><td>Hook限制</td><td>首行不超过50字符</td></tr>
+            <tr><td>标签</td><td>5-10个，风格可选 branded/niche/popular/mix</td></tr>
+          </table>
+          <p style="margin-top:12px;"><strong>最适合：</strong>视觉内容配文、快速tips、情绪驱动</p>
+          <div class="demo-output">
+            <div class="platform-label">📤 示例输出</div>
+Stop doing this ONE thing with your content. 🙅‍♀️
+
+One piece of content should fuel your entire week. Create it once, then let your agent repurpose it everywhere. 🧠→✍️→♻️
+
+What's your content workflow like? 👇
+---
+#ContentCreator #MarketingTips #AI #WorkSmarter
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num" style="background:#333">🧵</div>
+          <div class="pattern-name">Meta Threads</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <table class="config-table">
+            <tr><td>长度</td><td>500 字符上限</td></tr>
+            <tr><td>风格</td><td>casual / conversational / twitter-like</td></tr>
+            <tr><td>标签</td><td>默认不加</td></tr>
+            <tr><td>结构</td><td>直奔主题 → 核心观点 → 开放式提问</td></tr>
+          </table>
+          <p style="margin-top:12px;"><strong>最适合：</strong>随性想法、快速洞察、轻松讨论</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 脚本架构 -->
+  <div class="section">
+    <div class="section-title">脚本架构：7个Shell文件的分工</div>
+    <div class="card">
+      <table class="config-table">
+        <tr><th>脚本</th><th>功能</th><th>特色</th></tr>
+        <tr><td><code>setup.sh</code></td><td>初始化配置</td><td>创建目录、复制配置模板、生成示例文件</td></tr>
+        <tr><td><code>repurpose.sh</code></td><td>主脚本：一键全平台</td><td>读取源文件→解析配置→循环调用各平台脚本</td></tr>
+        <tr><td><code>twitter-thread.sh</code></td><td>Twitter线程</td><td>构建LLM Prompt，含Voice/Platform/User三层约束</td></tr>
+        <tr><td><code>linkedin-post.sh</code></td><td>LinkedIn帖子</td><td>B2B focus，no-link-in-body规则</td></tr>
+        <tr><td><code>newsletter.sh</code></td><td>邮件通讯</td><td>自动生成3个主题行备选</td></tr>
+        <tr><td><code>instagram-caption.sh</code></td><td>Instagram标题</td><td>Emoji密度控制，Hook长度约束</td></tr>
+        <tr><td><code>threads-post.sh</code></td><td>Threads帖子</td><td>casual风格，默认不加标签</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Prompt 工程亮点</h3>
+      <p>每个平台脚本不是简单地告诉 AI "改写成XX"，而是构建了一套<strong>三层约束系统</strong>：</p>
+      <ul>
+        <li><strong>Voice 层</strong>：从 config.json 读取 tone/personality/avoid/emoji_level，确保人格一致</li>
+        <li><strong>Platform 层</strong>：每个平台独有的长度限制、格式规则、Hook 策略、CTA 风格</li>
+        <li><strong>User 层</strong>：品牌名、网站、主CTA——自动融入每个版本</li>
+      </ul>
+      <p style="margin-top:8px">还有个巧妙设计：Prompt 开头要求 AI 先做 <strong>Constraint Checklist & Confidence Score</strong>（约束清单自检打分），逼 AI 在动笔前先过一遍所有约束。</p>
+    </div>
+  </div>
+
+  <!-- 配置系统 -->
+  <div class="section">
+    <div class="section-title">配置系统深度解读</div>
+    <div class="card">
+      <h3>config.example.json 架构（8大模块）</h3>
+      <table class="config-table">
+        <tr><th>模块</th><th>作用</th><th>关键字段</th></tr>
+        <tr><td><strong>voice</strong></td><td>全局声音人格</td><td>tone, personality[], avoid[], signature_phrases[], emoji_level, first_person</td></tr>
+        <tr><td><strong>platforms.*</strong></td><td>各平台独立开关和参数</td><td>enabled, priority, 各平台特有字段</td></tr>
+        <tr><td><strong>input</strong></td><td>输入格式支持</td><td>supported_formats, max_length, extract_quotes/stats/key_points</td></tr>
+        <tr><td><strong>output</strong></td><td>输出管理</td><td>directory, naming_pattern, copy_to_clipboard</td></tr>
+        <tr><td><strong>llm</strong></td><td>模型参数</td><td>model, temperature, max_tokens, system_prompt_prefix</td></tr>
+        <tr><td><strong>advanced</strong></td><td>进阶功能</td><td>generate_multiple_hooks, engagement_score, batch_mode</td></tr>
+        <tr><td><strong>user</strong></td><td>个人/品牌信息</td><td>name, brand, website, primary_cta</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 高级用法 -->
+  <div class="section">
+    <div class="section-title">进阶用法</div>
+    <div class="card">
+      <h3>单平台快速迭代</h3>
+      <div class="code-block">
+<span class="comment"># 只生成 Twitter 线程，5条推文，bold风格</span>
+<span class="cmd">twitter-thread.sh</span> <span class="file">blog-post.md</span> --tweets 5 --style bold
+
+<span class="comment"># 只生成 LinkedIn，短版，B2B聚焦</span>
+<span class="cmd">linkedin-post.sh</span> <span class="file">blog-post.md</span> --length short --b2b-focus
+      </div>
+    </div>
+    <div class="card">
+      <h3>URL 直接输入</h3>
+      <div class="code-block">
+<span class="comment"># 直接从网页地址生成</span>
+<span class="cmd">repurpose.sh</span> https://yourblog.com/post --platforms twitter,linkedin
+      </div>
+    </div>
+    <div class="card">
+      <h3>批量处理一个月的内容</h3>
+      <div class="code-block">
+<span class="comment"># 一次处理多篇</span>
+<span class="cmd">for</span> file <span class="cmd">in</span> content/*.md; <span class="cmd">do</span>
+  repurpose.sh "$file" --output archives/
+<span class="cmd">done</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>一次性覆盖声音设置</h3>
+      <div class="code-block">
+<span class="comment"># 今天想要犀利+高Emoji？不改配置，一次性覆盖</span>
+<span class="cmd">repurpose.sh</span> <span class="file">blog-post.md</span> --tone witty --emoji high
+      </div>
+    </div>
+  </div>
+
+  <!-- 参考资料 -->
+  <div class="section">
+    <div class="section-title">参考资料与文件清单</div>
+    <a href="#" class="ref-link" onclick="event.preventDefault(); document.getElementById('sourceModal').classList.add('active')">
+      <div class="ref-title">📄 SKILL.md（6.5 KB）</div>
+      <div class="ref-desc">完整的 Skill 定义文件，含所有平台规则、配置说明、使用示例和 Pro Tips</div>
+    </a>
+    <a href="#" class="ref-link" onclick="event.preventDefault()">
+      <div class="ref-title">⚙️ config.example.json（~110 行）</div>
+      <div class="ref-desc">完整的配置模板，8大模块覆盖声音、平台、输入输出、LLM参数</div>
+    </a>
+    <a href="#" class="ref-link" onclick="event.preventDefault()">
+      <div class="ref-title">📜 scripts/（7 个 Shell 脚本）</div>
+      <div class="ref-desc">setup.sh + repurpose.sh（主控） + 5个平台独立脚本，每个都含完整的 LLM Prompt 构建逻辑</div>
+    </a>
+  </div>
+
+  <!-- 辣评 -->
+  <div class="section">
+    <div class="section-title">Buddy 辣评 🌶️</div>
+    <div class="verdict-box" style="text-align:left; border: 2px solid var(--yellow);">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div class="stars">⭐⭐⭐☆☆</div>
+        <h3 style="color:var(--yellow)">有料但不成熟</h3>
+      </div>
+
+      <div class="card" style="background:rgba(74,222,128,0.05); border-color:rgba(74,222,128,0.3); margin-bottom:16px;">
+        <h3 style="color:var(--green)">👍 优点</h3>
+        <ul>
+          <li><strong>解决真痛点。</strong>"一稿多发"是所有内容创作者的日常折磨。4小时改写 → 30秒自动生成，ROI 一目了然。这不是"有了更好"的工具，是"没有会死"的效率需求。</li>
+          <li><strong>Voice Profile 设计精巧。</strong>不是简单的"改写成XX风格"，而是用 tone + personality + avoid + signature_phrases 四维定义声音，确保跨平台一致性。这个概念比大多数内容工具都想得深。</li>
+          <li><strong>平台知识密度高。</strong>每个平台的适配规则写得很细：LinkedIn 不在正文放链接、Instagram 前50字符是Hook、Twitter 线程只在末条放标签……这些是实打实的运营经验沉淀。</li>
+          <li><strong>Prompt Engineering 示范。</strong>每个脚本里的三层约束（Voice + Platform + User）+ Confidence Score 自检机制，是很好的 Prompt 工程教学案例。</li>
+          <li><strong>配置驱动，不改代码。</strong>全部行为通过 JSON 控制，换个平台策略改个字段就行。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:rgba(239,68,68,0.05); border-color:rgba(239,68,68,0.3); margin-bottom:16px;">
+        <h3 style="color:#ef4444">👎 缺点</h3>
+        <ul>
+          <li><strong>脚本全是 Mock，不能真跑。</strong>打开任何一个平台脚本，你会发现 LLM 调用部分写的是 <code>MOCK_RESPONSE="..."</code>。所有7个脚本都只是输出硬编码的示例文本。它本质上是一个<strong>精心设计的架构原型</strong>，不是可运行的产品。</li>
+          <li><strong>依赖不存在的 CLI。</strong>脚本里写的 <code>clawdbot llm</code>、<code>clawdbot web_fetch</code> 等命令根本不存在于当前 Skill 体系里。就像给一辆车画了完美的仪表盘，但没有装引擎。</li>
+          <li><strong>平台覆盖有局限。</strong>5个平台全是海外的——Twitter/LinkedIn/Instagram/Threads/Newsletter。对中文用户来说，微信公众号、小红书、微博、知乎才是主战场。零本土适配。</li>
+          <li><strong>没有质量反馈环。</strong>生成完就完了，没有 A/B Hook 测试、没有互动率预测、没有"这条推文预计表现"的评估。在 advanced 配置里有 <code>engagement_score: false</code> 和 <code>generate_multiple_hooks: false</code>，但实际没有实现。</li>
+          <li><strong>剪贴板功能只支持 macOS。</strong>用的是 <code>pbcopy</code>，Linux 和 Windows 用户直接无视。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:rgba(251,191,36,0.05); border-color:rgba(251,191,36,0.3);">
+        <h3 style="color:var(--yellow)">💡 适用建议</h3>
+        <p style="margin-top:8px;">
+          <strong>当学习材料读，不要当工具用。</strong><br><br>
+          Content Repurposer 的真正价值不在于它能不能跑起来（不能），而在于它<strong>展示了一个内容分发自动化系统该怎么设计</strong>：
+        </p>
+        <ul style="margin-top:8px">
+          <li>Voice Profile 的四维模型可以直接搬到你自己的 Prompt 里</li>
+          <li>每个平台的适配规则是一份现成的社交媒体运营手册</li>
+          <li>三层约束的 Prompt 结构（Voice + Platform + User）是通用的 Prompt 设计模式</li>
+          <li>config.json 驱动行为的架构思路可以用在任何 AI 工具项目中</li>
+        </ul>
+        <p style="margin-top:12px">
+          <strong>如果你真的需要一稿多发的工具</strong>，建议看 Skill 市场的 <strong>Content Factory</strong>（#002期）——它至少有完整的 Prompt 模板和多Agent编排。或者直接把 Repurposer 的 Prompt 模式搬进 WorkBuddy 的对话里手动用。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 互动区 -->
+  <div class="interact-section">
+    <h3>📝 学习心得 & 互动</h3>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">看完这个 Skill，有什么想法？可以记录在这里（保存在本地）</p>
+    <textarea id="notes" placeholder="写点学习心得...&#10;&#10;比如：Voice Profile 的设计思路能用在哪？你的多平台分发流程是怎样的？"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveNotes()">💾 保存心得</button>
+      <button class="btn btn-outline" onclick="clearNotes()">清空</button>
+    </div>
+    <div id="save-status" style="margin-top:8px; font-size:13px; color:var(--green); display:none;">✅ 已保存到本地</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Skill 日报 — 每天拆解一个 AI 技能 | Powered by Buddy ⚡</p>
+  <p style="margin-top:4px;">
+    <a href="index.html" style="color:var(--accent); text-decoration:none;">← 返回首页查看所有期数</a>
+  </p>
+</div>
+
+<script>
+function saveNotes() {
+  const notes = document.getElementById('notes').value;
+  localStorage.setItem('skill-daily-004-notes', notes);
+  const status = document.getElementById('save-status');
+  status.style.display = 'block';
+  setTimeout(() => status.style.display = 'none', 2000);
+}
+function clearNotes() {
+  document.getElementById('notes').value = '';
+  localStorage.removeItem('skill-daily-004-notes');
+}
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('skill-daily-004-notes');
+  if (saved) document.getElementById('notes').value = saved;
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('sourceModal').classList.remove('active');
+});
+</script>
+
+<!-- Source Modal -->
+<div class="modal-overlay" id="sourceModal" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📄 SKILL.md 原文（Content Repurposer v1.1.0）</h3>
+      <button class="modal-close" onclick="document.getElementById('sourceModal').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body">---
+name: content-repurposer
+description: Transform long-form content into platform-optimized snippets.
+description_zh: "将长文内容转化为多平台优化的社交媒体片段"
+version: 1.1.0
+---
+
+# Content Repurposer — Create Once, Publish Everywhere
+
+**Stop reformatting. Start publishing.**
+
+You wrote one great piece. Now you need it as a Twitter thread, LinkedIn post,
+newsletter section, and Instagram caption. That's 4+ hours of rewriting,
+reformatting, and maintaining voice consistency. Or... 30 seconds.
+
+Content Repurposer takes your long-form content (blog post, video transcript,
+podcast notes, article) and automatically generates platform-optimized versions.
+Same core message. Different formats. Your voice throughout.
+
+**What makes it different:** This isn't a template engine—it's intelligent
+adaptation. The skill understands what makes content perform on each platform:
+Twitter wants punchy hooks and thread flow, LinkedIn values professional
+insights and storytelling, newsletters need scannable sections and CTAs,
+Instagram demands visual hooks and emoji.
+
+## The Problem
+
+Content creators face the **repurpose grind**:
+- ✍️ You create one killer blog post (2-3 hours)
+- 🔄 Manually reformat for Twitter (45 min)
+- 🔄 Adapt for LinkedIn (30 min)
+- 🔄 Write newsletter version (30 min)
+- 🔄 Craft Instagram caption (20 min)
+- 😤 Total: 4+ hours of reformatting, still inconsistent voice
+
+## The Solution
+
+```bash
+repurpose.sh blog-post.md
+# → twitter-thread.txt
+# → linkedin-post.txt
+# → newsletter.md
+# → instagram-caption.txt
+# → threads-post.txt (bonus!)
+```
+
+30 seconds. Five platforms. Your voice. Ready to copy-paste and publish.
+
+## Setup
+
+1. Run `scripts/setup.sh` to initialize config
+2. Edit `~/.config/content-repurposer/config.json` with your voice settings
+3. Test with: `scripts/repurpose.sh examples/sample-post.md --dry-run`
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/setup.sh` | Initialize config directory |
+| `scripts/repurpose.sh` | Main script: all platforms at once |
+| `scripts/twitter-thread.sh` | Twitter thread only |
+| `scripts/linkedin-post.sh` | LinkedIn post only |
+| `scripts/newsletter.sh` | Newsletter section only |
+| `scripts/instagram-caption.sh` | Instagram caption only |
+| `scripts/threads-post.sh` | Meta Threads post only |
+
+## How It Works
+
+1. **Parse Input**: Read long-form content (markdown, .txt, URL)
+2. **Extract Core**: Identify main thesis, key points, quotes, stats
+3. **Platform Adapt**: For each enabled platform:
+   - Apply format rules (thread structure, char limits, emoji)
+   - Maintain voice/tone from config
+   - Add platform-specific hooks and CTAs
+   - Optimize for engagement patterns
+4. **Output**: Save to `output/` directory, optionally copy to clipboard
+
+## Voice Consistency
+
+```json
+"voice": {
+  "tone": "professional-casual",
+  "personality": ["direct", "insightful", "practical"],
+  "avoid": ["corporate jargon", "hype", "clickbait"],
+  "signature_phrases": ["Here's the thing:", "The reality:"],
+  "emoji_level": "moderate"
+}
+```
+
+Every platform adaptation respects these settings.
+
+## Platform Specs
+
+### Twitter/X Threads
+- Length: 3-10 tweets, 280 chars/tweet
+- Hook: Bold opening (question, stat, or bold claim)
+- Best for: Hot takes, frameworks, step-by-step guides
+
+### LinkedIn
+- Length: 1300-2000 characters
+- No links in body, short paragraphs
+- Best for: B2B insights, career lessons, thought leadership
+
+### Email Newsletter
+- Length: 200-500 words per section
+- Scannable sections with headers
+- Best for: Deep dives, curated insights
+
+### Instagram
+- Length: 150-300 characters
+- Emoji-heavy, visual language
+- Best for: Visual content tie-ins, quick tips
+
+### Meta Threads
+- Length: 500 characters max
+- Casual, conversational
+- Best for: Quick insights
+
+## Pro Tips
+
+1. Subject Line First: Generate 5 subject line options
+2. Hook Testing: Generate multiple hooks, pick the best
+3. Engagement Checklist: Each version has a clear CTA?
+4. Platform Priority: Start with best-performing platform
+5. Batch Days: Repurpose a month of content in one session
+
+## Use Cases
+
+- Bloggers: One post → a week of social content
+- Podcasters: Episode notes → promotional content
+- Course Creators: Transcripts → marketing snippets
+- Consultants: One insight → multi-platform thought leadership
+- Agencies: Scale content for clients
+
+## What It's NOT
+
+- ❌ Not a content generator (you provide source material)
+- ❌ Not a scheduler (use Buffer/Hootsuite for posting)
+- ❌ Not image creation (text only)
+
+Your content deserves more reach. Your time deserves better use.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
