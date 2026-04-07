@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skill 日报 #008 — Idea Validator 创业想法验证器</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card: #1a1a2e;
+    --card2: #16213e;
+    --accent: #e94560;
+    --accent2: #0f3460;
+    --text: #e0e0e0;
+    --text2: #a0a0a0;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --orange: #fb923c;
+    --purple: #c084fc;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 60px 24px 40px;
+    text-align: center;
+    border-bottom: 3px solid var(--accent);
+  }
+  .hero .issue { color: var(--accent); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+  .hero h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  .hero .subtitle { color: var(--text2); font-size: 18px; margin-bottom: 20px; }
+  .hero .tags { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .hero .tag { background: rgba(233,69,96,0.2); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+  .meta-bar {
+    display: flex; justify-content: center; gap: 32px; padding: 16px; background: var(--card);
+    font-size: 14px; color: var(--text2); border-bottom: 1px solid #333; flex-wrap: wrap;
+  }
+  .meta-bar span { display: flex; align-items: center; gap: 6px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+  .action-bar { display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(15,52,96,0.3); flex-wrap: wrap; }
+  .action-btn {
+    padding: 8px 20px; border-radius: 8px; border: 1px solid var(--accent);
+    background: transparent; color: var(--accent); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block;
+  }
+  .action-btn:hover { background: var(--accent); color: #fff; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--card); border: 1px solid #444; border-radius: 16px;
+    width: 90%; max-width: 900px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; border-bottom: 1px solid #333;
+  }
+  .modal-header h3 { font-size: 18px; }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 28px; cursor: pointer; }
+  .modal-close:hover { color: var(--accent); }
+  .modal-body {
+    padding: 24px; overflow-y: auto; font-size: 14px; line-height: 1.8; color: var(--text2);
+    font-family: 'Consolas', 'Monaco', monospace; white-space: pre-wrap; word-break: break-word;
+  }
+
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 22px; font-weight: 700; margin-bottom: 16px;
+    padding-left: 16px; border-left: 4px solid var(--accent);
+  }
+
+  .card {
+    background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    border: 1px solid #2a2a4a;
+  }
+  .card h3 { color: var(--accent); font-size: 18px; margin-bottom: 12px; }
+  .card p, .card li { color: var(--text2); font-size: 15px; line-height: 1.8; }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 6px; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(233,69,96,0.1), rgba(15,52,96,0.2));
+    border: 1px solid var(--accent);
+    border-radius: 12px; padding: 24px; margin-bottom: 16px;
+  }
+  .highlight-box h3 { color: #fff; }
+
+  /* 数据面板 */
+  .data-panel {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;
+  }
+  @media (max-width: 600px) { .data-panel { grid-template-columns: repeat(2, 1fr); } }
+  .data-item {
+    background: var(--card); border: 1px solid #2a2a4a; border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .data-item .num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .data-item .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* 框架步骤 */
+  .framework-steps {
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .fw-step {
+    display: flex; gap: 16px; padding: 16px 0;
+  }
+  .fw-dot {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; flex-shrink: 0;
+    background: var(--accent2); color: var(--blue); border: 2px solid var(--blue);
+  }
+  .fw-content h4 { font-size: 16px; margin-bottom: 4px; color: var(--text); }
+  .fw-content p { font-size: 14px; color: var(--text2); }
+  .fw-arrow { text-align: center; color: var(--text2); font-size: 20px; margin: -8px 0; padding-left: 12px; }
+
+  /* PCV 评分表 */
+  .pcv-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+  }
+  .pcv-table th, .pcv-table td {
+    padding: 10px 14px; text-align: left; border-bottom: 1px solid #333; font-size: 14px;
+  }
+  .pcv-table th {
+    color: var(--accent); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .pcv-table td { color: var(--text2); }
+  .pcv-table tr:hover td { background: rgba(233,69,96,0.05); }
+
+  /* 可折叠 */
+  .pattern-list { counter-reset: pattern; }
+  .pattern-item {
+    background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 12px;
+    border: 1px solid #2a2a4a; cursor: pointer; transition: all 0.2s;
+  }
+  .pattern-item:hover { border-color: var(--accent); }
+  .pattern-header { display: flex; align-items: center; gap: 12px; }
+  .pattern-num {
+    background: var(--accent); color: #fff; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pattern-name { font-size: 16px; font-weight: 600; flex: 1; }
+  .pattern-toggle { color: var(--text2); font-size: 20px; transition: transform 0.2s; }
+  .pattern-body { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #333; }
+  .pattern-item.open .pattern-body { display: block; }
+  .pattern-item.open .pattern-toggle { transform: rotate(180deg); }
+
+  /* 评分卡 */
+  .score-card {
+    background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(233,69,96,0.08));
+    border: 1px solid var(--yellow); border-radius: 12px; padding: 20px; margin: 12px 0;
+  }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .score-label { font-size: 14px; color: var(--text2); width: 80px; }
+  .score-bar { flex: 1; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .score-value { font-size: 14px; font-weight: 700; width: 50px; text-align: right; }
+
+  .ref-link {
+    display: block; background: var(--card2); border-radius: 8px; padding: 14px 18px;
+    margin-bottom: 8px; text-decoration: none; color: var(--text);
+    border: 1px solid #2a2a4a; transition: all 0.2s;
+  }
+  .ref-link:hover { border-color: var(--blue); }
+  .ref-link .ref-title { font-weight: 600; }
+  .ref-link .ref-desc { font-size: 13px; color: var(--text2); }
+
+  .verdict-box {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    border: 2px solid var(--yellow); border-radius: 16px; padding: 32px; text-align: center;
+  }
+  .verdict-box h3 { color: var(--yellow); font-size: 24px; margin-bottom: 16px; }
+  .stars { font-size: 28px; margin-bottom: 12px; }
+
+  .interact-section { margin-top: 40px; padding: 32px; background: var(--card); border-radius: 16px; border: 1px solid #2a2a4a; }
+  .interact-section h3 { color: var(--accent); margin-bottom: 16px; }
+  .interact-section textarea {
+    width: 100%; height: 100px; background: #0f0f0f; color: var(--text);
+    border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 14px;
+    resize: vertical; font-family: inherit;
+  }
+  .interact-section textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-row { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px; border-radius: 8px; border: none; font-size: 14px;
+    cursor: pointer; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #d63851; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid #555; }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .footer { text-align: center; padding: 40px 16px; color: var(--text2); font-size: 13px; border-top: 1px solid #222; margin-top: 40px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .badge-easy { background: rgba(74,222,128,0.2); color: var(--green); }
+  .badge-content { background: rgba(251,191,36,0.2); color: var(--yellow); }
+  .badge-must { background: rgba(233,69,96,0.2); color: var(--accent); }
+  .badge-blue { background: rgba(96,165,250,0.2); color: var(--blue); }
+
+  /* 连接卡片 */
+  .integration-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;
+  }
+  @media (max-width: 600px) { .integration-grid { grid-template-columns: 1fr; } }
+  .int-card {
+    background: rgba(15,52,96,0.3); border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px;
+  }
+  .int-card h4 { color: var(--blue); font-size: 14px; margin-bottom: 4px; }
+  .int-card p { color: var(--text2); font-size: 13px; }
+
+  /* 误区卡片 */
+  .mistake-card {
+    background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 10px; padding: 16px; margin-bottom: 10px;
+  }
+  .mistake-card h4 { color: #ef4444; font-size: 15px; margin-bottom: 4px; }
+  .mistake-card p { color: var(--text2); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="issue">SKILL 日报 · 第 008 期 · 2026.04.07</div>
+  <h1>💡 Idea Validator</h1>
+  <div class="subtitle">创业想法验证器 — 在写第一行代码之前，先搞清楚这事值不值得干</div>
+  <div class="tags">
+    <span class="tag">效率提升</span>
+    <span class="tag">创业验证</span>
+    <span class="tag">决策框架</span>
+    <span class="tag">Hexa 方法论</span>
+    <span class="tag">v1.0.0</span>
+  </div>
+</div>
+
+<div class="meta-bar">
+  <span>📦 SKILL.md 3.6 KB</span>
+  <span>📄 含 references/full-guide.md</span>
+  <span>⚡ 即装即用，零依赖</span>
+  <span>🧩 可串联 4 个下游 Skill</span>
+</div>
+
+<div class="action-bar">
+  <button class="action-btn" onclick="document.getElementById('sourceModal').classList.add('active')">📄 查看 SKILL.md 原文</button>
+  <a href="https://www.hexa.cc/" target="_blank" class="action-btn">🔗 Hexa 官网</a>
+  <a href="index.html" class="action-btn">🏠 返回首页</a>
+</div>
+
+<div class="container">
+
+  <!-- 数据面板 -->
+  <div class="data-panel">
+    <div class="data-item">
+      <div class="num">8</div>
+      <div class="label">验证步骤</div>
+    </div>
+    <div class="data-item">
+      <div class="num">4</div>
+      <div class="label">PCV 维度</div>
+    </div>
+    <div class="data-item">
+      <div class="num">20</div>
+      <div class="label">最少访谈数</div>
+    </div>
+    <div class="data-item">
+      <div class="num">24</div>
+      <div class="label">PCV 满分</div>
+    </div>
+  </div>
+
+  <!-- 一句话概述 -->
+  <div class="section">
+    <div class="section-title">这个 Skill 是什么？</div>
+    <div class="highlight-box">
+      <h3>一句话：用 Hexa 的 Opportunity Memo 框架 + PCV 评分体系，在写代码之前就搞清楚一个想法到底值不值得做。</h3>
+      <p style="margin-top:12px; color:var(--text2)">
+        Hexa 是法国最大的创业工厂（Studio），孵化过 30+ 家公司。这个 Skill 把他们内部用来"毙掉坏想法"的方法论变成了可交互的 AI 工作流：从问题评估、时机分析、ICP 定义到 PCV 量化评分，8 个步骤走完你就知道该冲还是该撤。核心哲学：<strong>"别爱上你的方案，先爱上你的问题。"</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- 为什么值得学 -->
+  <div class="section">
+    <div class="section-title">为什么值得学？</div>
+    <div class="card">
+      <p>不管你是真的要创业，还是在公司里推一个新项目、做一个产品方案，<strong>"这事值不值得做"的判断力是最稀缺的能力</strong>。大多数人的验证方式是：问朋友觉得怎么样 → 朋友说"挺好的" → 开干 → 三个月后发现没人买单。这个 Skill 把"拍脑袋"变成"算分数"。</p>
+      <ul style="margin-top:12px">
+        <li><span class="badge badge-must">必学</span> 想创业或内部立项的人——一套结构化验证方法，省你几个月试错</li>
+        <li><span class="badge badge-content">适用</span> 产品经理、策划——PCV 评分模型可以直接用来评估需求优先级</li>
+        <li><span class="badge badge-easy">好学</span> 不需要技术背景，纯决策框架层面的知识</li>
+        <li><span class="badge badge-blue">进阶</span> 可串联 market-sizer、startup-icp-definer 等 Skill 做完整验证链</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 核心理念 -->
+  <div class="section">
+    <div class="section-title">核心理念：先验证问题，再验证方案</div>
+    <div class="card">
+      <h3>Hexa 的铁律</h3>
+      <p style="font-size: 16px; font-style: italic; color: var(--yellow); margin-bottom: 16px;">
+        "You want to make something people want. But people don't always know what they want — so you need to understand what they actually need."
+      </p>
+      <ul>
+        <li><strong>问题 > 方案</strong> — 90% 的失败项目不是方案不行，是问题不成立</li>
+        <li><strong>量化 > 感觉</strong> — "我觉得有需求"不算验证，PCV 分数才算</li>
+        <li><strong>访谈 > 问卷</strong> — 20 个深度对话 > 2000 份问卷（因为问卷没法追问"为什么"）</li>
+        <li><strong>付费意愿 > 口头支持</strong> — "挺好的"不值钱，"我愿意付费测试"才值钱</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 8 步验证流程 -->
+  <div class="section">
+    <div class="section-title">8 步验证工作流</div>
+    <div class="framework-steps">
+      <div class="fw-step">
+        <div class="fw-dot">S1</div>
+        <div class="fw-content">
+          <h4>Project Canvas — 一句话说清楚</h4>
+          <p>"For [目标用户] who [痛点], [产品] provides [方案] that [关键收益], unlike [替代品] which [局限]."</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot">S2</div>
+        <div class="fw-content">
+          <h4>Problem Deep Dive — 问题够不够痛</h4>
+          <p>四维度评估：频率（多久痛一次）、严重度（多痛）、感知度（知道自己痛吗）、预算（愿意花钱止痛吗）</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot">S3</div>
+        <div class="fw-content">
+          <h4>Timing Analysis — 为什么是现在</h4>
+          <p>技术突破、市场变化、政策窗口、竞争真空——如果答不上"为什么以前没人做"，红灯</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot">S4</div>
+        <div class="fw-content">
+          <h4>ICP Definition — 谁是第一批用户</h4>
+          <p>公司类型/规模/行业 → 买单人 vs 使用人 → 触发事件 → 预算来源</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot">S5</div>
+        <div class="fw-content">
+          <h4>Value Proposition — 凭什么选你</h4>
+          <p>填框架："For X who Y, our product is Z that provides A, unlike B we C"</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot">S6</div>
+        <div class="fw-content">
+          <h4>Competitive Landscape — 竞品全景</h4>
+          <p>直接竞品 → 间接竞品 → 替代方案 → 潜在进入者。"没有竞品"不是好消息，可能说明没有市场</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot" style="border-color:var(--yellow); color:var(--yellow);">S7</div>
+        <div class="fw-content">
+          <h4>PCV 评分 — 量化一切（核心步骤）</h4>
+          <p>从价格、质量、性能、便利性四个维度，分别评估"现有方案多差"和"你的方案好多少"，算出 0-24 的总分</p>
+        </div>
+      </div>
+      <div class="fw-arrow">↓</div>
+      <div class="fw-step">
+        <div class="fw-dot" style="border-color:var(--green); color:var(--green);">S8</div>
+        <div class="fw-content">
+          <h4>Design Partner Validation — 找到愿意陪你测试的人</h4>
+          <p>3-5 个愿意测早期版本、定期给反馈、甚至付费的用户。找不到 = 不要开工</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PCV 评分详解（可折叠） -->
+  <div class="section">
+    <div class="section-title">关键功能模块（可折叠）</div>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">点击展开每个模块的详细说明 👇</p>
+
+    <div class="pattern-list">
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">1</div>
+          <div class="pattern-name">Problem Assessment Matrix — 问题四维评估</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>每个维度评 High/Med/Low，3-4 个 High = 强问题，0 个 = 根本不是问题。</p>
+          <table class="pcv-table">
+            <tr><th>维度</th><th>评估标准</th><th>影响</th></tr>
+            <tr><td><strong>频率</strong></td><td>每天/每周/每月/每年 遇到这个问题</td><td>频率越高 → 解决意愿越强</td></tr>
+            <tr><td><strong>严重度</strong></td><td>致命/重要/锦上添花</td><td>不解决会死 vs 不解决也行</td></tr>
+            <tr><td><strong>感知度</strong></td><td>主动找方案/知道有问题/不知道</td><td>用户不觉得痛 → 你需要教育市场（很贵）</td></tr>
+            <tr><td><strong>预算</strong></td><td>已有预算/愿意找钱/没钱</td><td>愿意付钱 = 真需求</td></tr>
+          </table>
+          <p style="margin-top:12px; color:var(--yellow);"><strong>Buddy 提示：</strong>大多数人跳过感知度和预算这两项。但恰恰是它们决定了你需要花多少钱获客。"高频+高严重度+低感知度"= 你要先花钱教育用户知道自己有问题，这比解决问题本身还贵。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">2</div>
+          <div class="pattern-name">PCV 评分系统 — 感知创造价值量化</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>PCV = Perceived Created Value。分两步打分：</p>
+          <p style="margin:12px 0;"><strong>第一步：现有方案有多差？</strong></p>
+          <table class="pcv-table">
+            <tr><th>维度</th><th>a=0分：没问题</th><th>b=1分：有问题</th><th>c=3分：严重问题</th></tr>
+            <tr><td>价格</td><td>价格合理</td><td>偏贵但能接受</td><td>贵到不想用</td></tr>
+            <tr><td>质量</td><td>质量够用</td><td>经常出小毛病</td><td>质量差到影响工作</td></tr>
+            <tr><td>性能</td><td>速度/效率OK</td><td>有时候慢/卡</td><td>严重拖效率</td></tr>
+            <tr><td>便利性</td><td>好用</td><td>有学习成本</td><td>难用到想骂人</td></tr>
+          </table>
+          <p style="margin:12px 0;"><strong>第二步：你的方案好多少？</strong>（同样四个维度，同样 a/b/c 打分）</p>
+          <p>8 项加总，满分 24 分。</p>
+          <div class="score-card">
+            <div class="score-row">
+              <span class="score-label" style="color:#ef4444;">0-6 分</span>
+              <div class="score-bar"><div class="score-fill" style="width:25%; background:#ef4444;"></div></div>
+              <span class="score-value" style="color:#ef4444;">别做</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label" style="color:var(--yellow);">7-12 分</span>
+              <div class="score-bar"><div class="score-fill" style="width:50%; background:var(--yellow);"></div></div>
+              <span class="score-value" style="color:var(--yellow);">再想想</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label" style="color:var(--blue);">13-18 分</span>
+              <div class="score-bar"><div class="score-fill" style="width:75%; background:var(--blue);"></div></div>
+              <span class="score-value" style="color:var(--blue);">值得做</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label" style="color:var(--green);">19-24 分</span>
+              <div class="score-bar"><div class="score-fill" style="width:100%; background:var(--green);"></div></div>
+              <span class="score-value" style="color:var(--green);">马上做</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">3</div>
+          <div class="pattern-name">One-Liner Template — 一句话说清你要干嘛</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>强制你用一个句子说清楚。说不清 = 想不清。</p>
+          <div class="card" style="background:rgba(96,165,250,0.05); border-color:rgba(96,165,250,0.3);">
+            <p><strong>模板：</strong>"For <span style="color:var(--blue)">[目标用户]</span> who <span style="color:var(--yellow)">[痛点]</span>, <span style="color:var(--green)">[产品名]</span> provides <span style="color:var(--orange)">[方案]</span> that <span style="color:var(--purple)">[关键收益]</span>, unlike <span style="color:var(--text2)">[替代品]</span> which <span style="color:#ef4444">[局限]</span>."</p>
+            <p style="margin-top:12px;"><strong>示例：</strong>"For <span style="color:var(--blue)">中小电商团队</span> who <span style="color:var(--yellow)">每天要手动回复上百条客服消息</span>, <span style="color:var(--green)">SmartReply</span> provides <span style="color:var(--orange)">AI自动分类+草稿回复</span> that <span style="color:var(--purple)">把客服响应时间从30分钟缩到3分钟</span>, unlike <span style="color:var(--text2)">全人工客服</span> which <span style="color:#ef4444">成本随订单量线性增长</span>."</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">4</div>
+          <div class="pattern-name">Timing Analysis — 时机窗口判断</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>好想法+错时机 = 失败创业。五个维度检查"为什么是现在"：</p>
+          <table class="pcv-table">
+            <tr><th>因素</th><th>要回答的问题</th></tr>
+            <tr><td><strong>技术推动</strong></td><td>哪些新技术让这件事变得可行？（例：GPT-4 让对话式 AI 成本暴降）</td></tr>
+            <tr><td><strong>市场变化</strong></td><td>用户行为发生了什么变化？（例：远程办公常态化）</td></tr>
+            <tr><td><strong>政策变化</strong></td><td>什么法规放开/收紧了？</td></tr>
+            <tr><td><strong>经济因素</strong></td><td>预算/支出结构有什么变化？</td></tr>
+            <tr><td><strong>竞争真空</strong></td><td>为什么以前没人做？现在障碍消除了吗？</td></tr>
+          </table>
+          <p style="margin-top:12px; color:var(--yellow);"><strong>杀手级问题：</strong>"如果他们在接下来12个月内不解决这个问题，会怎样？" —— 答案如果是"没啥"，时机就不对。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">5</div>
+          <div class="pattern-name">20-Interview Rule — 最小访谈量</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>在宣布"想法已验证"之前，你必须：</p>
+          <ul>
+            <li>跟 <strong>20 个潜在用户</strong> 深度对话（不是朋友，不是家人）</li>
+            <li>问的是<strong>他们的问题</strong>（不是推销你的方案）</li>
+            <li>搞清楚<strong>他们现在怎么解决的</strong></li>
+            <li>了解<strong>他们愿意付多少钱</strong>买一个更好的方案</li>
+            <li>找到 <strong>3-5 个愿意做 Design Partner</strong> 的人</li>
+          </ul>
+          <p style="margin-top:12px; color:var(--accent);"><strong>硬道理：如果你连 20 个人都找不到聊，这个市场可能根本不存在。</strong></p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">6</div>
+          <div class="pattern-name">Design Partner Readiness — 启动前最后一道关</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>找到愿意"陪跑"的早期用户，是验证的终极信号。五项检查清单：</p>
+          <ul>
+            <li>✅ 已锁定 3-5 个潜在客户</li>
+            <li>✅ 他们同意测试早期版本</li>
+            <li>✅ 他们承诺定期反馈（例：每两周一次电话）</li>
+            <li>✅ 他们愿意付费（哪怕打折）</li>
+            <li>✅ 他们确实痛感强烈</li>
+          </ul>
+          <p style="margin-top:12px;"><strong>评分：</strong>4-5 项 ✅ = 可以开工。2-3 项 = 还需验证。0-1 项 = 别动手。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">7</div>
+          <div class="pattern-name">Competitive Landscape — 竞品四象限</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>竞品不只是"做同样东西的公司"，要看四类：</p>
+          <table class="pcv-table">
+            <tr><th>类型</th><th>说明</th><th>示例</th></tr>
+            <tr><td><strong>直接竞品</strong></td><td>同产品、同用户</td><td>Notion vs Coda</td></tr>
+            <tr><td><strong>间接竞品</strong></td><td>不同产品、解决同一问题</td><td>Excel 替代简单项目管理</td></tr>
+            <tr><td><strong>替代方案</strong></td><td>完全不同的解决方式</td><td>外包给咨询公司</td></tr>
+            <tr><td><strong>潜在进入者</strong></td><td>能轻松切入的大公司</td><td>微软/Google 有相邻产品</td></tr>
+          </table>
+          <p style="margin-top:12px; color:var(--yellow);"><strong>关键洞察：</strong>"没有竞品"大概率不是好消息——可能说明这个市场太小了，或者问题没有严重到需要专门方案。</p>
+        </div>
+      </div>
+
+      <div class="pattern-item" onclick="this.classList.toggle('open')">
+        <div class="pattern-header">
+          <div class="pattern-num">8</div>
+          <div class="pattern-name">Output Template — 标准化验证报告</div>
+          <div class="pattern-toggle">▼</div>
+        </div>
+        <div class="pattern-body">
+          <p>验证完成后，Skill 会生成一份结构化报告，包含：</p>
+          <ul>
+            <li><strong>Executive Summary</strong> — One-Liner + PCV 总分 + 推荐（Go/No-Go/Pivot）+ 置信度</li>
+            <li><strong>Problem Assessment</strong> — 四维度评分 + 每项证据</li>
+            <li><strong>PCV Score Breakdown</strong> — 8 项评分详情（现有方案问题 + 你的改进）</li>
+            <li><strong>Validation Next Steps</strong> — 根据分数段给出具体下一步</li>
+            <li><strong>Final Verdict</strong> — 最终判决 + 如果继续的首要行动</li>
+          </ul>
+          <p style="margin-top:12px;">这份报告可以直接拿去给投资人/老板/合伙人看。结构清晰，数据驱动，不靠感觉。</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 常见错误 -->
+  <div class="section">
+    <div class="section-title">7 个致命验证错误</div>
+    <div class="mistake-card">
+      <h4>1. 确认偏误</h4>
+      <p>只跟认同你的人聊。你需要的是挑战你的人。</p>
+    </div>
+    <div class="mistake-card">
+      <h4>2. 方案先行</h4>
+      <p>爱上解决方案，忘了验证问题。"我要做一个X"——先问"谁需要X？为什么？"</p>
+    </div>
+    <div class="mistake-card">
+      <h4>3. 虚假验证</h4>
+      <p>"挺好的" ≠ 验证。"这太酷了" ≠ "我愿意付钱"。只有行为（付费、注册、投入时间）才算验证。</p>
+    </div>
+    <div class="mistake-card">
+      <h4>4. ICP 太宽</h4>
+      <p>"所有人都是我的用户"= 没有用户。越窄越好——先征服一个小群体。</p>
+    </div>
+    <div class="mistake-card">
+      <h4>5. 忽视竞品</h4>
+      <p>"没有竞品"大概率意味着没有市场，而不是你发现了蓝海。</p>
+    </div>
+    <div class="mistake-card">
+      <h4>6. 忽视时机</h4>
+      <p>好想法在错误的时间点 = 失败。WebVan（1999年的生鲜电商）概念完全对，就是早了10年。</p>
+    </div>
+    <div class="mistake-card">
+      <h4>7. 跳过 Design Partner</h4>
+      <p>没有人承诺陪你测试就开始建产品 = 在真空里造东西。</p>
+    </div>
+  </div>
+
+  <!-- Skill 联动 -->
+  <div class="section">
+    <div class="section-title">Skill 联动生态</div>
+    <div class="card">
+      <p>Idea Validator 设计了清晰的下游衔接：验证通过后，可以无缝进入下一个阶段。</p>
+      <div class="integration-grid">
+        <div class="int-card">
+          <h4>market-sizer</h4>
+          <p>验证通过后 → 计算 TAM/SAM/SOM 市场规模</p>
+        </div>
+        <div class="int-card">
+          <h4>startup-icp-definer</h4>
+          <p>ICP 需要细化 → 深度客户画像</p>
+        </div>
+        <div class="int-card">
+          <h4>mvp-architect</h4>
+          <p>决定做了 → 规划最小可行产品</p>
+        </div>
+        <div class="int-card">
+          <h4>leads-researcher</h4>
+          <p>需要 Design Partner → 找目标客户线索</p>
+        </div>
+      </div>
+      <p style="margin-top:12px; color:var(--text2); font-size:13px;">注：这些下游 Skill 目前在市场中尚未全部上架，但接口已预留。</p>
+    </div>
+  </div>
+
+  <!-- 参考资料 -->
+  <div class="section">
+    <div class="section-title">参考资料与背景</div>
+    <a href="https://www.hexa.cc/" target="_blank" class="ref-link">
+      <div class="ref-title">🏢 Hexa — 法国最大创业工厂</div>
+      <div class="ref-desc">前身 eFounders，已孵化 30+ SaaS 公司（Aircall、Spendesk、Front 等），Opportunity Memo 是其核心方法论</div>
+    </a>
+    <a href="#" class="ref-link" onclick="event.preventDefault(); document.getElementById('sourceModal').classList.add('active')">
+      <div class="ref-title">📦 SKILL.md（3.6 KB）+ references/full-guide.md（7 KB）</div>
+      <div class="ref-desc">完整的验证框架定义，含 8 步流程、PCV 计算、输出模板、20-Interview Rule</div>
+    </a>
+    <a href="https://en.wikipedia.org/wiki/Lean_startup" target="_blank" class="ref-link">
+      <div class="ref-title">📖 Lean Startup — 精益创业方法论</div>
+      <div class="ref-desc">Idea Validator 的底层思想与 Eric Ries 的精益创业一脉相承：Build-Measure-Learn 循环</div>
+    </a>
+    <a href="https://www.amazon.com/Mom-Test-customers-business-everyone/dp/1492180742" target="_blank" class="ref-link">
+      <div class="ref-title">📕 The Mom Test — 如何正确做用户访谈</div>
+      <div class="ref-desc">Rob Fitzpatrick 的经典：别问"你觉得我的想法怎么样"，要问"上次你遇到这个问题是什么时候？怎么解决的？"</div>
+    </a>
+  </div>
+
+  <!-- Buddy 辣评 -->
+  <div class="section">
+    <div class="section-title">Buddy 辣评 🌶️</div>
+    <div class="verdict-box" style="text-align:left; border-color: var(--yellow);">
+      <div style="text-align:center; margin-bottom:20px;">
+        <div class="stars">⭐⭐⭐⭐</div>
+        <h3 style="color:var(--yellow)">方法论满分，工程化不及格</h3>
+      </div>
+
+      <div class="card" style="background:rgba(74,222,128,0.05); border-color:rgba(74,222,128,0.3); margin-bottom:16px;">
+        <h3 style="color:var(--green)">👍 优点</h3>
+        <ul>
+          <li><strong>方法论含金量极高。</strong>Hexa 不是理论派——他们靠这套东西真金白银地筛选项目、孵化公司。PCV 评分体系简单但有效，把"我觉得这事能成"变成"4维度×2阶段=一个数字"。在 AI 辅助下，做一次完整验证可能只需要2小时对话。</li>
+          <li><strong>One-Liner Template 是杀手级工具。</strong>强制你用一句话说清楚在做什么。说不清楚一句话的项目，大概率想不清楚。这个模板可以单独拿出来用在任何场景——融资 pitch、内部立项、甚至写简历。</li>
+          <li><strong>20-Interview Rule 是防忽悠利器。</strong>"如果你连20个人都找不到聊，这个市场可能根本不存在" —— 这句话价值千金。多少项目死在"我以为有需求"上。</li>
+          <li><strong>Skill 联动设计有远见。</strong>验证只是起点，后面有 market-sizer、icp-definer、mvp-architect 接力。虽然下游 Skill 还没齐，但架构意识到位。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:rgba(239,68,68,0.05); border-color:rgba(239,68,68,0.3); margin-bottom:16px;">
+        <h3 style="color:#ef4444">👎 缺点</h3>
+        <ul>
+          <li><strong>SKILL.md 太薄，全靠 references 撑。</strong>主文件只有 3.6KB，92 行。核心逻辑全在 full-guide.md 里。这说明 Skill 的 Prompt Engineering 做得不够——AI 需要在主文件里就获取足够的上下文，而不是依赖 reference 文件。</li>
+          <li><strong>零自动化、零脚本。</strong>没有任何可执行的代码。不像小红书 Skill 有15个脚本，这个纯粹是一份"指导文档"。AI 的执行质量完全取决于它对文档的理解，没有硬约束。</li>
+          <li><strong>PCV 评分的主观性没有被承认。</strong>a/b/c 三档评分看起来量化，但"什么算严重问题"完全靠主观判断。不同的人给同一个项目打分，结果可能差 10 分。Skill 没有提供校准机制（比如 Anchor Examples）。</li>
+          <li><strong>中国市场验证逻辑有差异。</strong>框架完全是欧美创业场景：找 Design Partner → 付费测试 → 逐步放量。在中国市场，更常见的路径是"先免费圈用户 → 再找商业模式"。ICP 定义里的 Buying Center、Budget Source 等概念在 to-C 场景下需要大幅改造。</li>
+          <li><strong>下游 Skill 大多不存在。</strong>说好的 market-sizer、startup-icp-definer、mvp-architect、leads-researcher —— 市场里一个都没有。联动是画饼。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="background:rgba(251,191,36,0.05); border-color:rgba(251,191,36,0.3);">
+        <h3 style="color:var(--yellow)">💡 谁最该用？</h3>
+        <p style="margin-top:8px;">
+          <strong>准备创业或做新项目的人</strong>——装上 Skill，把你的想法告诉 AI，让它引导你走完 8 步验证。2 小时就能得到一份结构化的验证报告，比自己闷头想靠谱 100 倍。<br><br>
+          <strong>产品经理</strong>——PCV 评分模型可以直接借用来做需求优先级排序。把"这个需求重不重要"变成"现有方案多差×我们的改进多大"。<br><br>
+          <strong>内容创作者</strong>——如果你在考虑做付费内容、开课、做 SaaS 工具，先用这个框架过一遍。"觉得能成"和"验证能成"之间差了 20 个用户访谈。<br><br>
+          <span style="color:var(--accent);">⚠️ 注意：</span>如果你做的是中国市场 to-C 产品，需要自行调整框架中的欧美创业假设。特别是付费验证、Design Partner 这些概念在国内的落地方式不同。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 互动区 -->
+  <div class="interact-section">
+    <h3>📝 学习心得 & 互动</h3>
+    <p style="color:var(--text2); margin-bottom:16px; font-size:14px">看完这期拆解，有什么想验证的想法？可以试着写一个 One-Liner 👇</p>
+    <textarea id="notes" placeholder="试着用 One-Liner 模板写写你的想法：&#10;&#10;For [目标用户] who [痛点], [产品名] provides [方案] that [关键收益], unlike [替代品] which [局限]."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveNotes()">💾 保存心得</button>
+      <button class="btn btn-outline" onclick="clearNotes()">清空</button>
+    </div>
+    <div id="save-status" style="margin-top:8px; font-size:13px; color:var(--green); display:none;">✅ 已保存到本地</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Skill 日报 — 每天拆解一个 AI 技能 | Powered by Buddy ⚡</p>
+  <p style="margin-top:4px;"><a href="index.html" style="color:var(--accent); text-decoration:none;">← 返回首页</a></p>
+</div>
+
+<script>
+function saveNotes() {
+  const notes = document.getElementById('notes').value;
+  localStorage.setItem('skill-daily-008-notes', notes);
+  const status = document.getElementById('save-status');
+  status.style.display = 'block';
+  setTimeout(() => status.style.display = 'none', 2000);
+}
+function clearNotes() {
+  document.getElementById('notes').value = '';
+  localStorage.removeItem('skill-daily-008-notes');
+}
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('skill-daily-008-notes');
+  if (saved) document.getElementById('notes').value = saved;
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('sourceModal').classList.remove('active');
+});
+</script>
+
+<!-- Source Modal -->
+<div class="modal-overlay" id="sourceModal" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📄 SKILL.md 原文（Idea Validator v1.0.0）</h3>
+      <button class="modal-close" onclick="document.getElementById('sourceModal').classList.remove('active')">&times;</button>
+    </div>
+    <div class="modal-body">---
+name: idea-validator
+description: "Validate startup ideas using Hexa's Opportunity Memo framework and Perceived Created Value (PCV) methodology. Assess problem-solution fit, market opportunity, and determine if an idea is worth pursuing."
+description_zh: "创业想法验证，评估问题-方案匹配度与市场机会"
+description_en: "Validate startup ideas with problem-solution fit and market assessment"
+version: 1.0.0
+---
+
+# Idea Validator - Startup Idea Assessment Framework
+
+Rigorously assess startup ideas BEFORE building using structured validation—saving months of wasted effort on ideas that won't work.
+
+**Hexa's Principle:** "You want to make something people want. But people don't always know what they want—so you need to understand what they actually need."
+
+## When This Activates
+
+- User asks "is this a good idea"
+- User says "I want to build X" without validation
+- User asks "should I pursue this"
+- User mentions a startup idea they're considering
+- User wants to know if their idea is worth building
+
+## The Framework
+
+**Validation = Opportunity Memo Assessment + Perceived Created Value (PCV) Score**
+
+### Problem Assessment Matrix
+
+| Dimension | Rating | Impact |
+|-----------|--------|--------|
+| Frequency | [Daily/Weekly/Monthly] | High/Med/Low |
+| Severity | [Critical/Important/Nice-to-have] | High/Med/Low |
+| Awareness | [Actively seeking/Aware/Unaware] | High/Med/Low |
+| Budget | [Has budget/Would find/No budget] | High/Med/Low |
+
+**Problem Score:** 3-4 High = Strong. 1-2 = Weak. 0 = Not a real problem.
+
+### PCV Scoring (4 Dimensions)
+
+Rate current solution problems + your improvement:
+
+| Dimension | Current Problem | Your Improvement |
+|-----------|-----------------|------------------|
+| **Price** | Not a problem / A problem / Serious | No diff / Some / Serious |
+| **Quality** | Not a problem / A problem / Serious | No diff / Some / Serious |
+| **Performance** | Not a problem / A problem / Serious | No diff / Some / Serious |
+| **Convenience** | Not a problem / A problem / Serious | No diff / Some / Serious |
+
+**Scoring:** a=0, b=1, c=3 points. Sum all 8 ratings.
+
+| Score | Interpretation | Recommendation |
+|-------|---------------|----------------|
+| 0-6 | Weak | Don't pursue |
+| 7-12 | Moderate | Needs refinement |
+| 13-18 | Strong | Worth pursuing |
+| 19-24 | Exceptional | Build NOW |
+
+## Quick Discovery Questions
+
+**Problem Space:**
+
+1. What specific pain point does your ICP feel?
+2. How do they currently solve this?
+3. What's wrong with current solutions?
+4. How often do they experience this pain?
+5. What does this problem cost them?
+
+**Timing:**
+
+1. Why is NOW the right time?
+2. What has changed recently?
+3. What barriers existed before that are now gone?
+
+**ICP:**
+
+1. Company type, size, industry
+2. Buyer vs. user role
+3. What triggers them to seek a solution?
+
+## Integration
+
+| Skill | When to Use |
+|-------|-------------|
+| `market-sizer` | After validation passes |
+| `startup-icp-definer` | Deep dive on customer |
+| `mvp-architect` | Scope the build |
+| `leads-researcher` | Find design partners |
+
+---
+
+**For detailed execution workflow, output templates, and PCV calculations:** `references/full-guide.md`
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
